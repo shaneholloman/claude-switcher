@@ -74,6 +74,15 @@ claude-pro
 ### Models
 Default model IDs are defined in `config/models.sh`. You can modify this file to change defaults for the project, or override them with environment variables.
 
+### Model Overrides
+You can override the default models without changing `config/models.sh` by defining them in your `~/.claude-switcher/secrets.sh` file. This is useful for testing new models or using custom fine-tuned models.
+
+Example `secrets.sh` override:
+```bash
+# Override AWS Sonnet model
+export CLAUDE_MODEL_SONNET_AWS="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+```
+
 ### Secrets
 Credentials are stored in `~/.claude-switcher/secrets.sh`. This file is not committed to the repository.
 
