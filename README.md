@@ -14,7 +14,7 @@ A collection of scripts to easily switch between different authentication modes 
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/claude-switcher.git
+   git clone https://github.com/andisearch/claude-switcher.git
    cd claude-switcher
    ```
 
