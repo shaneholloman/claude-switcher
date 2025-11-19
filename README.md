@@ -88,4 +88,4 @@ Credentials are stored in `~/.claude-switcher/secrets.sh`. This file is not comm
 
 ## License
 
-MIT License. Please give credit to the original authors.
+MIT License. Copyright (c) 2024 Jed White from Andi AI Search.
