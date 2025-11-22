@@ -1,0 +1,151 @@
+#!/bin/bash
+
+# Source utils
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/claude-switcher-utils.sh"
+
+# Load config and secrets
+load_config
+
+# Generate unique session identifier
+CLAUDE_SESSION_ID="azure-$$-$(date +%s)"
+export CLAUDE_SESSION_ID
+
+print_status "Switching to Claude Microsoft Foundry on Azure mode..."
+print_status "Session ID: $CLAUDE_SESSION_ID"
+
+# Validate Microsoft Foundry configuration
+if [ -z "$ANTHROPIC_FOUNDRY_RESOURCE" ] && [ -z "$ANTHROPIC_FOUNDRY_BASE_URL" ]; then
+    print_error "ANTHROPIC_FOUNDRY_RESOURCE or ANTHROPIC_FOUNDRY_BASE_URL is not set"
+    print_error ""
+    print_error "To use Microsoft Foundry on Azure mode, you need to:"
+    print_error "  1. Create a resource in Microsoft Foundry: https://ai.azure.com/"
+    print_error "  2. Deploy Claude models (Opus, Sonnet, Haiku) in your resource"
+    print_error "  3. Set ANTHROPIC_FOUNDRY_RESOURCE in your secrets.sh file"
+    print_error "  4. Authenticate with Azure (az login) or set ANTHROPIC_FOUNDRY_API_KEY"
+    print_error ""
+    print_error "Example secrets.sh:"
+    print_error "  export ANTHROPIC_FOUNDRY_RESOURCE=\"your-resource-name\""
+    print_error "  export ANTHROPIC_FOUNDRY_API_KEY=\"your-azure-api-key\"  # Optional"
+    print_error "  export CLAUDE_MODEL_SONNET_AZURE=\"claude-sonnet-4-5\"  # Your deployment name"
+    exit 1
+fi
+
+# Check for authentication
+if [ -z "$ANTHROPIC_FOUNDRY_API_KEY" ]; then
+    # Check if az CLI is available for default credential chain
+    if ! command -v az &> /dev/null; then
+        print_warning "az CLI is not installed and ANTHROPIC_FOUNDRY_API_KEY is not set"
+        print_warning ""
+        print_warning "You can either:"
+        print_warning "  1. Set ANTHROPIC_FOUNDRY_API_KEY in secrets.sh, OR"
+        print_warning "  2. Install Azure CLI and run: az login"
+        print_warning ""
+        print_warning "Attempting to use Azure default credential chain anyway..."
+    else
+        # Check if authenticated
+        az_account=$(az account show 2>/dev/null)
+        if [ -z "$az_account" ]; then
+            print_error "Not authenticated with Azure"
+            print_error ""
+            print_error "Please authenticate with: az login"
+            print_error "Or set ANTHROPIC_FOUNDRY_API_KEY in your secrets.sh file"
+            exit 1
+        fi
+        print_status "Using Azure default credential chain"
+    fi
+else
+    print_status "Using API key authentication"
+fi
+
+# Store existing environment variables
+SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
+SAVED_CLAUDE_CODE_USE_VERTEX="$CLAUDE_CODE_USE_VERTEX"
+SAVED_CLAUDE_CODE_USE_FOUNDRY="$CLAUDE_CODE_USE_FOUNDRY"
+
+# Disable other providers
+export CLAUDE_CODE_USE_BEDROCK=0
+export CLAUDE_CODE_USE_VERTEX=0
+unset AWS_BEARER_TOKEN_BEDROCK
+
+# Enable Microsoft Foundry
+export CLAUDE_CODE_USE_FOUNDRY=1
+
+# Set Foundry variables
+if [ -n "$ANTHROPIC_FOUNDRY_RESOURCE" ]; then
+    export ANTHROPIC_FOUNDRY_RESOURCE
+fi
+
+if [ -n "$ANTHROPIC_FOUNDRY_BASE_URL" ]; then
+    export ANTHROPIC_FOUNDRY_BASE_URL
+fi
+
+if [ -n "$ANTHROPIC_FOUNDRY_API_KEY" ]; then
+    export ANTHROPIC_FOUNDRY_API_KEY
+fi
+
+# Parse arguments to select model
+parse_model_args "AZURE" "$@"
+
+# Strip our custom flags
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --opus|--sonnet|--haiku)
+            shift
+            ;;
+        --model)
+            shift 2
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+print_success "Claude Microsoft Foundry on Azure mode activated"
+print_status "- Using Microsoft Foundry"
+print_status "- Resource: ${ANTHROPIC_FOUNDRY_RESOURCE:-$ANTHROPIC_FOUNDRY_BASE_URL}"
+print_status "- Model: $ANTHROPIC_MODEL"
+if [ -n "$az_account" ]; then
+    print_status "- Authenticated via Azure CLI"
+fi
+
+print_status "Launching Claude Code..."
+
+restore_environment() {
+    print_status "Restoring original environment variables..."
+    
+    if [ -n "$SAVED_ANTHROPIC_MODEL" ]; then
+        export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
+    else
+        unset ANTHROPIC_MODEL
+    fi
+    
+    if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then
+        export CLAUDE_CODE_USE_BEDROCK="$SAVED_CLAUDE_CODE_USE_BEDROCK"
+    else
+        unset CLAUDE_CODE_USE_BEDROCK
+    fi
+    
+    if [ -n "$SAVED_CLAUDE_CODE_USE_VERTEX" ]; then
+        export CLAUDE_CODE_USE_VERTEX="$SAVED_CLAUDE_CODE_USE_VERTEX"
+    else
+        unset CLAUDE_CODE_USE_VERTEX
+    fi
+    
+    if [ -n "$SAVED_CLAUDE_CODE_USE_FOUNDRY" ]; then
+        export CLAUDE_CODE_USE_FOUNDRY="$SAVED_CLAUDE_CODE_USE_FOUNDRY"
+    else
+        unset CLAUDE_CODE_USE_FOUNDRY
+    fi
+    
+    print_success "Environment restored"
+}
+
+trap restore_environment EXIT
+
+# Launch Claude Code
+claude "${ARGS[@]}"

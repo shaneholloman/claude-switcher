@@ -4,8 +4,8 @@ A collection of scripts to easily switch between different authentication modes 
 
 ## Features
 
-- **Multiple Providers**: Support for Anthropic API, AWS Bedrock, and Google Vertex AI.
-- **Model Switching**: Easily switch between Sonnet 4.5, Opus 4.1, or custom models.
+- **Multiple Providers**: Support for Anthropic API, AWS Bedrock, Google Vertex AI, and Microsoft Foundry on Azure.
+- **Model Switching**: Easily switch between Sonnet 4.5, Opus 4.1, Haiku 4.5, or custom models.
 - **Pro Plan Support**: Toggle back to standard Claude Pro web authentication.
 - **Session Management**: Unique session IDs for tracking.
 - **Secure Configuration**: API keys stored in a separate, git-ignored file.
@@ -37,22 +37,77 @@ nano ~/.claude-switcher/secrets.sh
 Uncomment and fill in the sections for the providers you wish to use:
 
 **AWS Bedrock:**
+
+Multiple authentication methods supported (see [official docs](https://code.claude.com/docs/en/amazon-bedrock)):
+
 ```bash
-export AWS_ACCESS_KEY_ID="your_access_key"
-export AWS_SECRET_ACCESS_KEY="your_secret_key"
-export AWS_REGION="us-west-2" # Change if your models are in a different region
+# Option 1: AWS Bedrock API Key (recommended for simplicity)
+export AWS_BEARER_TOKEN_BEDROCK="your-bedrock-api-key"
+export AWS_REGION="us-west-2"
+
+# Option 2: AWS Access Keys
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_REGION="us-west-2"
+
+# Option 3: AWS Profile
+export AWS_PROFILE="your-profile-name"
+export AWS_REGION="us-west-2"
 ```
+> **Note**: `AWS_REGION` is required for all auth methods. Scripts validate authentication is configured before launching.
 
 **Google Vertex AI:**
-```bash
-export GOOGLE_CLOUD_PROJECT="your_project_id"
-export GOOGLE_LOCATION="us-central1"
-```
+
+**Setup Steps:**
+1. **Install Google Cloud SDK**: [Download here](https://cloud.google.com/sdk/docs/install)
+2. **Authenticate**: Run `gcloud auth application-default login`
+3. **Enable Vertex AI API**: [Click to enable](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com)
+4. **Enable Claude Models**: [Open Model Garden](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-sonnet-4) and click "Enable" on models you want to use
+5. **Configure secrets.sh**:
+   ```bash
+   export ANTHROPIC_VERTEX_PROJECT_ID="your-gcp-project-id"
+   export CLOUD_ML_REGION="global"
+   ```
+
+> **Optional**: Set specific regions per model (defaults to `CLOUD_ML_REGION`):
+> ```bash
+> export VERTEX_REGION_CLAUDE_4_5_SONNET="us-east5"
+> export VERTEX_REGION_CLAUDE_4_1_OPUS="global"
+> ```
+>
+> **Note**: Models are region-specific. Check [availability](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden) in your region.
 
 **Anthropic API:**
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
+> **Note**: Scripts validate that `ANTHROPIC_API_KEY` is set before launching.
+
+**Microsoft Foundry on Azure:**
+
+Announced November 18, 2024 ([blog post](https://www.anthropic.com/news/claude-in-microsoft-foundry)).
+
+**Setup Steps:**
+1. **Create Azure Resource**: Navigate to [Microsoft Foundry portal](https://ai.azure.com/)
+2. **Deploy Models**: Create deployments for Claude Opus, Sonnet, and/or Haiku
+3. **Get Credentials**: From your resource's "Endpoints and keys" section
+4. **Configure secrets.sh**:
+   ```bash
+   # Option 1: API Key (simpler)
+   export ANTHROPIC_FOUNDRY_API_KEY="your-azure-api-key"
+   export ANTHROPIC_FOUNDRY_RESOURCE="your-resource-name"
+   
+   # Option 2: Azure CLI (az login)
+   export ANTHROPIC_FOUNDRY_RESOURCE="your-resource-name"
+   # Then run: az login
+   
+   # Set your deployment names (must match what you created in Azure)
+   export CLAUDE_MODEL_SONNET_AZURE="claude-sonnet-4-5"
+   export CLAUDE_MODEL_HAIKU_AZURE="claude-haiku-4-5"
+   export CLAUDE_MODEL_OPUS_AZURE="claude-opus-4-1"
+   ```
+
+> **Note**: Model names in Azure are your custom deployment names, not the standard model IDs.
 
 #### Overriding Defaults (Optional)
 You can override default model IDs or regions in the same `secrets.sh` file. This is useful for testing new models or using custom endpoints.
@@ -60,7 +115,7 @@ You can override default model IDs or regions in the same `secrets.sh` file. Thi
 **Example: Override AWS Region and Model**
 ```bash
 export AWS_REGION="us-east-1"
-export CLAUDE_MODEL_SONNET_AWS="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+export CLAUDE_MODEL_SONNET_AWS="global.anthropic.claude-sonnet-4-5-20250929-v1:0"
 ```
 
 ## Switching Providers to Avoid Rate Limits
@@ -135,7 +190,7 @@ claude-aws --opus
 claude-aws --haiku
 
 # Use a custom model ID
-claude-aws --model "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+claude-aws --model "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
 ```
 
 ### Google Vertex AI
@@ -162,6 +217,21 @@ claude-anthropic --opus
 claude-anthropic --haiku
 ```
 
+### Microsoft Foundry on Azure
+```bash
+# Use default model (Sonnet deployment)
+claude-azure
+
+# Use Opus deployment
+claude-azure --opus
+
+# Use Haiku deployment
+claude-azure --haiku
+
+# Use custom deployment name
+claude-azure --model "my-custom-deployment"
+```
+
 ### Claude Pro Plan
 ```bash
 # Switch back to standard web auth (default Claude Code behavior)
@@ -173,12 +243,57 @@ claude
 ```
 
 ### Utilities
-```bash
-# Check your current configuration and environment variables
-claude-status
 
-# List active Claude Code sessions
+#### `claude-status`
+Shows your current Claude Code authentication configuration with mode-specific details:
+
+```bash
+claude-status
+```
+
+**Detects and displays:**
+- **AWS Bedrock**: Shows region, API token status, model settings, and output token limits
+- **Vertex AI**: Shows GCP project, location, authentication status, and active gcloud account
+- **Anthropic API**: Shows API key status and model configuration
+- **Claude Pro**: Shows when using default web authentication
+
+**Example output (Anthropic API mode):**
+```
+[Claude Switcher] Current mode: Anthropic API
+
+[Claude Switcher] Anthropic API Configuration:
+[Claude Switcher]   CLAUDE_CODE_USE_BEDROCK: 0
+[Claude Switcher]   ANTHROPIC_API_KEY: set (hidden)
+[Claude Switcher]   ANTHROPIC_MODEL: claude-sonnet-4-5-20250929
+
+[Claude Switcher] Features:
+  - API authentication via Anthropic API
+  - Login/logout disabled
+  - Direct access to Anthropic models
+```
+
+#### `claude-sessions`
+Lists all active Claude Code processes with session tracking:
+
+```bash
 claude-sessions
+```
+
+**Shows:**
+- Process ID (PID)
+- Authentication mode (AWS Bedrock, Vertex AI, Anthropic API, Claude Pro)
+- Session ID for tracking
+- Region (for AWS)
+- Status
+
+**Example output:**
+```
+[Claude Sessions] Found Claude Code processes:
+
+PID      Mode                 Session ID                Region          Status
+----     ----                 ----------                ------          ------
+12345    AWS Bedrock          aws-12345-1234567890      us-west-2       Running
+67890    Vertex AI            vertex-67890-1234567     N/A             Running
 ```
 
 ## Configuration
@@ -187,6 +302,33 @@ claude-sessions
 Default model IDs are defined in `config/models.sh`. The `--sonnet`, `--opus`, and `--haiku` flags automatically use the latest available version of each model tier.
 
 While you can modify `config/models.sh` directly, it is recommended to use `~/.claude-switcher/secrets.sh` for overrides to avoid merge conflicts when updating.
+
+#### Variable Naming
+The scripts use provider-specific model variables that can be customized in `secrets.sh`:
+
+```bash
+# AWS Bedrock
+export CLAUDE_MODEL_SONNET_AWS="global.anthropic.claude-sonnet-4-5-20250929-v1:0"
+export CLAUDE_MODEL_OPUS_AWS="us.anthropic.claude-opus-4-1-20250805-v1:0"
+export CLAUDE_MODEL_HAIKU_AWS="us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Google Vertex AI
+export CLAUDE_MODEL_SONNET_VERTEX="claude-sonnet-4-5@20250929"
+export CLAUDE_MODEL_OPUS_VERTEX="claude-opus-4-1@20250805"
+export CLAUDE_MODEL_HAIKU_VERTEX="claude-haiku-4-5@20251001"
+
+# Anthropic API
+export CLAUDE_MODEL_SONNET_ANTHROPIC="claude-sonnet-4-5-20250929"
+export CLAUDE_MODEL_OPUS_ANTHROPIC="claude-opus-4-1-20250805"
+export CLAUDE_MODEL_HAIKU_ANTHROPIC="claude-haiku-4-5"
+
+# Microsoft Foundry/Azure (deployment names)
+export CLAUDE_MODEL_SONNET_AZURE="claude-sonnet-4-5"
+export CLAUDE_MODEL_OPUS_AZURE="claude-opus-4-1"
+export CLAUDE_MODEL_HAIKU_AZURE="claude-haiku-4-5"
+```
+
+These variables are used by the scripts to set `ANTHROPIC_MODEL` at runtime based on which provider you're using.
 
 ### Updating to New Models
 When new Claude models are released:

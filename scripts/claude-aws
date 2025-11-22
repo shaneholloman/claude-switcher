@@ -14,6 +14,21 @@ export CLAUDE_SESSION_ID
 print_status "Switching to Claude AWS Bedrock mode..."
 print_status "Session ID: $CLAUDE_SESSION_ID"
 
+# Validate AWS Bedrock credentials
+if [ -z "$AWS_BEARER_TOKEN_BEDROCK" ]; then
+    print_error "AWS_BEARER_TOKEN_BEDROCK is not set"
+    print_error ""
+    print_error "To use AWS Bedrock mode, you need to:"
+    print_error "  1. Set AWS_BEARER_TOKEN_BEDROCK in your secrets.sh file"
+    print_error "  2. Ensure AWS Bedrock is enabled in your AWS account"
+    print_error "  3. Grant appropriate IAM permissions for Bedrock model access"
+    print_error ""
+    print_error "Example secrets.sh:"
+    print_error "  export AWS_BEARER_TOKEN_BEDROCK=\"your-api-key-here\""
+    print_error "  export AWS_REGION=\"us-west-2\""
+    exit 1
+fi
+
 # Store existing environment variables to restore after Claude exits
 SAVED_AWS_REGION="$AWS_REGION"
 SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"

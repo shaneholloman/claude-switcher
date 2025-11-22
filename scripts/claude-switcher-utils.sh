@@ -10,10 +10,7 @@ NC='\033[0m' # No Color
 # Configuration Paths
 CONFIG_DIR="${HOME}/.claude-switcher"
 SECRETS_FILE="${CONFIG_DIR}/secrets.sh"
-# Get the directory where this script resides (scripts/) and go up one level to find config/
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-MODELS_FILE="${PROJECT_ROOT}/config/models.sh"
+MODELS_FILE="${CONFIG_DIR}/models.sh"
 
 print_status() {
     echo -e "${BLUE}[Claude Switcher]${NC} $1"
@@ -91,12 +88,20 @@ parse_model_args() {
         export ANTHROPIC_MODEL="$custom_model_id"
         print_status "Selected Custom Model: $ANTHROPIC_MODEL"
     else
-        # Construct variable name like CLAUDE_MODEL_SONNET_AWS
-        local config_var="CLAUDE_MODEL_${selected_model}_${provider}"
-        export ANTHROPIC_MODEL="${!config_var}"
-        print_status "Selected ${selected_model} Model: $ANTHROPIC_MODEL"
+        # Use provider-specific model variable
+        # These are defined in config/models.sh and can be overridden in secrets.sh
+        local model_var="CLAUDE_MODEL_${selected_model}_${provider}"
+        
+        if [ -n "${!model_var}" ]; then
+            export ANTHROPIC_MODEL="${!model_var}"
+            print_status "Selected ${selected_model} Model: $ANTHROPIC_MODEL"
+        else
+            print_warning "No model configuration found for ${selected_model} on ${provider}"
+            print_warning "Set ${model_var} in secrets.sh"
+        fi
     fi
 }
+
 
 # Common cleanup/restore function
 restore_env() {

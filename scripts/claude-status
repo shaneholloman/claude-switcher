@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude Status Script
-# Shows current Claude Code configuration
+# Shows current Claude Code configuration for all authentication methods
 
 # Source utils
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,29 +14,88 @@ echo ""
 print_status "=== Claude Code Configuration Status ==="
 echo ""
 
-print_status "Environment Variables:"
-print_status "  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-not set}"
-print_status "  AWS_REGION: ${AWS_REGION:-not set}"
-print_status "  AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:+set (hidden)}${AWS_BEARER_TOKEN_BEDROCK:-not set}"
-print_status "  CLAUDE_CODE_MAX_OUTPUT_TOKENS: ${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-not set}"
-print_status "  MAX_THINKING_TOKENS: ${MAX_THINKING_TOKENS:-not set}"
-print_status "  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:+set (hidden)}${ANTHROPIC_API_KEY:-not set}"
-print_status "  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-not set}"
-
-echo ""
-if [ "$CLAUDE_CODE_USE_BEDROCK" = "1" ]; then
-    print_success "Current mode: AWS Bedrock"
-    print_status "- API authentication via AWS Bedrock"
-    print_status "- Login/logout disabled"
-    print_status "- Prompt caching available"
+# Detect current authentication mode
+mode="Unknown"
+if [ "$CLAUDE_CODE_USE_BEDROCK" = "1" ] && [ -n "$AWS_BEARER_TOKEN_BEDROCK" ]; then
+    mode="AWS Bedrock"
+elif [ -n "$ANTHROPIC_API_KEY" ] && [ "$CLAUDE_CODE_USE_BEDROCK" != "1" ]; then
+    mode="Anthropic API"
+elif [ -n "$GOOGLE_CLOUD_PROJECT" ] || [ -n "$GOOGLE_LOCATION" ]; then
+    mode="Vertex AI"
 elif [ "$CLAUDE_CODE_USE_BEDROCK" = "0" ]; then
-    print_success "Current mode: Claude Pro Plan"
-    print_status "- Web authentication via Claude Pro"
-    print_status "- Login/logout enabled"
+    mode="Claude Pro Plan"
 else
-    print_warning "Current mode: Default (likely Claude Pro Plan)"
-    print_status "- CLAUDE_CODE_USE_BEDROCK not explicitly set"
+    mode="Default (likely Claude Pro Plan)"
 fi
+
+print_success "Current mode: $mode"
+echo ""
+
+# Display relevant environment variables based on mode
+case "$mode" in
+    "AWS Bedrock")
+        print_status "AWS Bedrock Configuration:"
+        print_status "  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK}"
+        print_status "  AWS_REGION: ${AWS_REGION:-not set}"
+        print_status "  AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:+set (hidden)}"
+        print_status "  CLAUDE_CODE_MAX_OUTPUT_TOKENS: ${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-not set}"
+        print_status "  MAX_THINKING_TOKENS: ${MAX_THINKING_TOKENS:-not set}"
+        print_status "  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-not set}"
+        echo ""
+        print_status "Features:"
+        print_status "  - API authentication via AWS Bedrock"
+        print_status "  - Login/logout disabled"
+        print_status "  - Prompt caching available"
+        ;;
+    
+    "Vertex AI")
+        print_status "Vertex AI Configuration:"
+        print_status "  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-0}"
+        print_status "  GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-not set}"
+        print_status "  GOOGLE_LOCATION: ${GOOGLE_LOCATION:-not set}"
+        print_status "  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-not set}"
+        echo ""
+        # Check if gcloud is configured
+        if command -v gcloud &> /dev/null; then
+            gcloud_account=$(gcloud config get-value account 2>/dev/null)
+            if [ -n "$gcloud_account" ]; then
+                print_status "Google Cloud Authentication:"
+                print_status "  - Authenticated as: $gcloud_account"
+            else
+                print_warning "  - Not authenticated with gcloud"
+            fi
+        else
+            print_warning "  - gcloud CLI not found"
+        fi
+        echo ""
+        print_status "Features:"
+        print_status "  - API authentication via Google Vertex AI"
+        print_status "  - Uses Application Default Credentials"
+        print_status "  - Login/logout disabled"
+        ;;
+    
+    "Anthropic API")
+        print_status "Anthropic API Configuration:"
+        print_status "  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-0}"
+        print_status "  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:+set (hidden)}"
+        print_status "  ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-not set}"
+        echo ""
+        print_status "Features:"
+        print_status "  - API authentication via Anthropic API"
+        print_status "  - Login/logout disabled"
+        print_status "  - Direct access to Anthropic models"
+        ;;
+    
+    "Claude Pro Plan"|"Default (likely Claude Pro Plan)")
+        print_status "Claude Pro Plan Configuration:"
+        print_status "  CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-not set}"
+        echo ""
+        print_status "Features:"
+        print_status "  - Web authentication via Claude Pro"
+        print_status "  - Login/logout enabled"
+        print_status "  - Subject to subscription usage limits"
+        ;;
+esac
 
 echo ""
 print_status "Available commands:"

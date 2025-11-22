@@ -3,25 +3,66 @@
 # Copy this file to ~/.claude-switcher/secrets.sh and fill in your values.
 
 # AWS Bedrock Credentials
+# See: https://code.claude.com/docs/en/amazon-bedrock
+# Multiple authentication methods supported:
+
+# Option 1: AWS Bedrock API Key (recommended for simplicity)
+# export AWS_BEARER_TOKEN_BEDROCK="your-bedrock-api-key"
+
+# Option 2: AWS Access Keys
 # export AWS_ACCESS_KEY_ID="your_access_key"
 # export AWS_SECRET_ACCESS_KEY="your_secret_key"
-# export AWS_REGION="us-west-2"
-# export AWS_PROFILE="default" # Optional
+# export AWS_SESSION_TOKEN="your_session_token"  # Optional, for temporary credentials
 
-# Google Vertex Credentials
-# export GOOGLE_CLOUD_PROJECT="your_project_id"
-# export GOOGLE_LOCATION="us-central1"
-# export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json" # Optional if using gcloud auth
+# Option 3: AWS Profile
+# export AWS_PROFILE="your-profile-name"
+
+# Required for all AWS auth methods:
+# export AWS_REGION="us-west-2"
+
+# Google Vertex AI Credentials
+# See: https://code.claude.com/docs/en/google-vertex-ai
+# export ANTHROPIC_VERTEX_PROJECT_ID="your_gcp_project_id"
+# export CLOUD_ML_REGION="global"  # or "us-east5", "us-central1", etc.
+
+# Optional: Set specific regions for each model (defaults to CLOUD_ML_REGION if not set)
+# export VERTEX_REGION_CLAUDE_3_5_SONNET="us-east5"
+# export VERTEX_REGION_CLAUDE_3_5_HAIKU="us-east5"
+# export VERTEX_REGION_CLAUDE_3_7_SONNET="us-east5"
+# export VERTEX_REGION_CLAUDE_4_0_OPUS="europe-west1"
+# export VERTEX_REGION_CLAUDE_4_0_SONNET="us-east5"
+# export VERTEX_REGION_CLAUDE_4_1_OPUS="europe-west1"
 
 # Anthropic API Key
+# See: https://console.anthropic.com/
 # export ANTHROPIC_API_KEY="sk-ant-..."
 
+# Microsoft Foundry on Azure Credentials
+# See: https://code.claude.com/docs/en/microsoft-foundry
+# Announced Nov 18, 2024: https://www.anthropic.com/news/claude-in-microsoft-foundry
+
+# Option 1: API Key authentication
+# export ANTHROPIC_FOUNDRY_API_KEY="your-azure-api-key"
+
+# Option 2: Use Azure default credential chain (az login)
+# If ANTHROPIC_FOUNDRY_API_KEY is not set, Azure default credentials will be used
+
+# Required: Azure resource name or full base URL
+# export ANTHROPIC_FOUNDRY_RESOURCE="your-resource-name"
+# Or provide the full URL:
+# export ANTHROPIC_FOUNDRY_BASE_URL="https://your-resource-name.services.ai.azure.com"
+
+# ============================================================================
 # Model Overrides (Optional)
+# ============================================================================
 # You can override the default models defined in config/models.sh here.
+# These provider-specific variables are used by our scripts to set ANTHROPIC_MODEL
+# at runtime based on which provider you're using.
+
 # AWS Bedrock Models
-# export CLAUDE_MODEL_SONNET_AWS="us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+# export CLAUDE_MODEL_SONNET_AWS="global.anthropic.claude-sonnet-4-5-20250929-v1:0"
 # export CLAUDE_MODEL_OPUS_AWS="us.anthropic.claude-opus-4-1-20250805-v1:0"
-# export CLAUDE_MODEL_HAIKU_AWS="anthropic.claude-haiku-4-5-20251001-v1:0"
+# export CLAUDE_MODEL_HAIKU_AWS="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 # Google Vertex Models
 # export CLAUDE_MODEL_SONNET_VERTEX="claude-sonnet-4-5@20250929"
@@ -32,3 +73,8 @@
 # export CLAUDE_MODEL_SONNET_ANTHROPIC="claude-sonnet-4-5-20250929"
 # export CLAUDE_MODEL_OPUS_ANTHROPIC="claude-opus-4-1-20250805"
 # export CLAUDE_MODEL_HAIKU_ANTHROPIC="claude-haiku-4-5"
+
+# Microsoft Foundry/Azure Models (deployment names - must match your Azure deployments)
+# export CLAUDE_MODEL_SONNET_AZURE="claude-sonnet-4-5"
+# export CLAUDE_MODEL_OPUS_AZURE="claude-opus-4-1"
+# export CLAUDE_MODEL_HAIKU_AZURE="claude-haiku-4-5"

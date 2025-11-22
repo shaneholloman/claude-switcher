@@ -39,6 +39,12 @@ else
     echo "Secrets file already exists: $SECRETS_FILE (skipping overwrite)"
 fi
 
+# Copy models configuration (always update to get latest model definitions)
+MODELS_FILE="$CONFIG_DIR/models.sh"
+echo "Copying models configuration..."
+cp "$PROJECT_ROOT/config/models.sh" "$MODELS_FILE"
+echo -e "${GREEN}Updated $MODELS_FILE${NC}"
+
 # --- 2. Script Installation ---
 
 echo ""
@@ -58,6 +64,7 @@ SCRIPTS=(
     "claude-aws"
     "claude-vertex"
     "claude-anthropic"
+    "claude-azure"
     "claude-status"
     "claude-sessions"
     "claude-switcher-utils.sh"
@@ -87,6 +94,7 @@ echo "  claude-pro          - Switch to Claude Pro Plan mode"
 echo "  claude-aws          - Switch to AWS Bedrock mode"
 echo "  claude-vertex       - Switch to Google Vertex AI mode"
 echo "  claude-anthropic    - Switch to Anthropic API mode"
+echo "  claude-azure        - Switch to Microsoft Foundry on Azure mode"
 echo "  claude-status       - Show current configuration"
 echo "  claude-sessions     - List active Claude sessions"
 echo ""
