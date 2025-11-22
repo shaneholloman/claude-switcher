@@ -14,19 +14,25 @@ A collection of scripts to easily switch between different authentication modes 
 
 ## How It Works
 
-Claude Switcher uses two complementary approaches for provider switching:
+Claude Switcher uses two complementary approaches for provider switching, **both session-scoped and non-destructive**:
 
 ### API Key Helper (Anthropic API ↔ Pro/Max)
 
-For switching between **Claude Pro/Max subscription** and **Anthropic native API key**, claude-switcher uses Claude Code's `apiKeyHelper` setting **non-destructively**:
+For switching between **Claude Pro/Max subscription** and **Anthropic native API key**, claude-switcher uses Claude Code's `apiKeyHelper` setting with **automatic state preservation**:
 
-1. **First `claude-anthropic` run**: Adds `apiKeyHelper` to `~/.claude/settings.json` (backed up first)
-2. **Mode tracking** in `~/.claude-switcher/current-mode.sh` stores your current provider (`pro` or `anthropic`)
-3. **Dynamic authentication**: The helper script returns your API key in `anthropic` mode, or nothing in `pro` mode (enabling web auth)
-4. **Running `claude-pro`**: Removes `apiKeyHelper` from settings.json, restoring original behavior
-5. **Plain `claude` unaffected**: Always works as it did before installation, unless you've explicitly run `claude-anthropic`
+1. **Session start**: `claude-anthropic` saves your existing apiKeyHelper configuration (if any), then adds its own
+2. **Mode tracking** in `~/.claude-switcher/current-mode.sh` stores the current provider (`pro` or `anthropic`)
+3. **Dynamic authentication**: The helper script returns your API key in `anthropic` mode
+4. **Session end**: Restore trap automatically restores your original apiKeyHelper configuration
+5. **Plain `claude` unaffected**: Always works exactly as before installation
 
-**Key**: The switcher never modifies settings.json during installation—only when you explicitly choose to use Anthropic API mode
+**Similarly for Pro mode**: `claude-pro` temporarily removes apiKeyHelper for the session, then restores it on exit.
+
+**Key benefits**:
+- ✅ **Non-destructive**: Preserves your existing apiKeyHelper if you have one
+- ✅ **Session-scoped**: Like AWS/Vertex/Azure, changes only affect the wrapper script session  
+- ✅ **Auto-cleanup**: Plain `claude` always runs in native state after any script exits
+- ✅ **Multi-session safe**: Each session has independent state tracking
 ### Environment Variables (AWS, Vertex AI, Azure)
 
 For **AWS Bedrock**, **Google Vertex AI**, and **Microsoft Foundry on Azure**, switching is even simpler:
@@ -59,7 +65,11 @@ You may be prompted for your password to allow installation to system directorie
 ./setup.sh
 ```
 
-> **Important**: Setup does NOT modify your Claude configuration. Plain `claude` continues to work exactly as before. The apiKeyHelper is only activated when you explicitly run `claude-anthropic` for the first time, and is removed when you run `claude-pro`.
+> **Important**: Setup does NOT modify your Claude configuration. The switcher scripts are **session-scoped**:
+> - Running `claude-anthropic` or `claude-pro` only affects THAT session
+> - On exit, your original apiKeyHelper configuration is automatically restored
+> - Plain `claude` always runs in its native, unmodified state
+> - Safe even if you already have a custom apiKeyHelper configured
 
 ### 3. Configure Your Secrets
 The setup script creates a secrets file at `~/.claude-switcher/secrets.sh`. You must edit this file to add your API keys and credentials.
@@ -269,13 +279,17 @@ claude-azure --model "my-custom-deployment"
 
 ### Claude Pro Plan
 ```bash
-# Switch back to standard web auth (default Claude Code behavior)
+# Force Pro/Max subscription for this session (removes any apiKeyHelper)
 claude-pro
 
 # OR simply run claude directly
-# This works because the switcher scripts only affect the current command execution
+# Uses your native state (respects any existing apiKeyHelper you have)
 claude
 ```
+
+**Key difference**: 
+- `claude-pro`: Explicitly removes apiKeyHelper for the session to ensure Pro/Max subscription is used, then restores your original config on exit
+- `claude`: Always uses your native, unmodified configuration
 
 ### Utilities
 
@@ -396,7 +410,7 @@ This will show:
 
 ### Check Current Mode
 
-View your current mode:
+View your current mode (if a switcher script is running):
 
 ```bash
 cat ~/.claude-switcher/current-mode.sh
@@ -409,14 +423,36 @@ export CLAUDE_SWITCHER_MODE="pro"
 export CLAUDE_SWITCHER_MODE="anthropic"
 ```
 
-### Manually Reset to Pro Mode
+### Session-Scoped Behavior
 
-If you need to reset to Pro/Max subscription:
+**Important**: All wrapper scripts are session-scoped:
+- Changes only affect the active Claude session
+- On exit, original settings are automatically restored
+- Plain `claude` always runs in native state
+
+To verify native state:
+```bash
+# Exit any active claude-anthropic or claude-pro session
+# Then check settings
+cat ~/.claude/settings.json
+# Should show your original apiKeyHelper (or no apiKeyHelper if you never had one)
+```
+
+### Manually Reset (Emergency Only)
+
+If something goes wrong and you need to reset:
 
 ```bash
-claude-pro
-# OR manually:
-echo 'export CLAUDE_SWITCHER_MODE="pro"' > ~/.claude-switcher/current-mode.sh
+# Remove state files
+rm -f ~/.claude-switcher/apiKeyHelper-state-*.tmp
+
+# Check your settings
+cat ~/.claude/settings.json
+
+# If apiKeyHelper points to our script when it shouldn't:
+# Restore from backup
+ls ~/.claude/settings.json.backup-*
+cp ~/.claude/settings.json.backup-YYYYMMDD-HHMMSS ~/.claude/settings.json
 ```
 
 ### Test apiKeyHelper Directly
@@ -438,17 +474,21 @@ echo 'export CLAUDE_SWITCHER_MODE="anthropic"' > ~/.claude-switcher/current-mode
 If you switch from Pro to `claude-anthropic` but still see Pro plan rate limits:
 
 1. Verify API key is set: `grep ANTHROPIC_API_KEY ~/.claude-switcher/secrets.sh`
-2. Check current mode: `cat ~/.claude-switcher/current-mode.sh`
-3. Run `claude-status` to verify configuration
-4. Try running `claude-anthropic` again (not just `claude`)
+2. Check you're using the wrapper: Make sure you ran `claude-anthropic` (not plain `claude`)
+3. Run `claude-status` during the session to verify configuration
+4. In the Claude session, run `/status` to see authentication method
+
+**Remember**: The wrapper only affects the current session. Each time you want Anthropic API, run `claude-anthropic`.
 
 ### Switching Back to Pro Not Working?
 
 If web authentication doesn't activate after running `claude-pro`:
 
-1. Check mode was set: `cat ~/.claude-switcher/current-mode.sh` (should show `pro`)
-2. Launch with `claude-pro` or plain `claude` command
+1. Make sure you're running `claude-pro` (creates new session)
+2. OR just use plain `claude` (always native state)
 3. In Claude session, run `/status` to verify authentication method
+
+**Remember**: After exiting ANY wrapper script, plain `claude` returns to native state automatically.
 
 ### AWS/Vertex/Azure Issues?
 
