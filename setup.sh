@@ -45,6 +45,46 @@ echo "Copying models configuration..."
 cp "$PROJECT_ROOT/config/models.sh" "$MODELS_FILE"
 echo -e "${GREEN}Updated $MODELS_FILE${NC}"
 
+# --- 1b. API Key Helper Setup ---
+
+# Copy API key helper script
+API_KEY_HELPER="$CONFIG_DIR/claude-api-key-helper.sh"
+echo "Installing API key helper script..."
+cp "$PROJECT_ROOT/scripts/claude-api-key-helper.sh" "$API_KEY_HELPER"
+chmod +x "$API_KEY_HELPER"
+echo -e "${GREEN}Installed $API_KEY_HELPER${NC}"
+
+# Initialize current mode file
+CURRENT_MODE_FILE="$CONFIG_DIR/current-mode.sh"
+if [ ! -f "$CURRENT_MODE_FILE" ]; then
+    echo "Initializing mode configuration..."
+    cat > "$CURRENT_MODE_FILE" << 'EOF'
+# Current claude-switcher mode
+# Used by apiKeyHelper to determine authentication method
+# Valid modes: pro, anthropic, aws, vertex, azure
+export CLAUDE_SWITCHER_MODE="pro"
+EOF
+    echo -e "${GREEN}Created $CURRENT_MODE_FILE (default: pro)${NC}"
+else
+    echo "Mode configuration already exists: $CURRENT_MODE_FILE (preserving)"
+fi
+
+# Configure Claude Code settings.json with apiKeyHelper
+CLAUDE_SETTINGS_DIR="$HOME/.claude"
+CLAUDE_SETTINGS_FILE="$CLAUDE_SETTINGS_DIR/settings.json"
+
+# Note: We do NOT automatically add apiKeyHelper to settings.json
+# This would be destructive to the user's existing Claude setup
+# Instead, claude-anthropic will add it when first run
+# And claude-pro will remove it when run
+
+echo ""
+echo -e "${GREEN}API Key Helper installed to $API_KEY_HELPER${NC}"
+echo ""
+echo -e "${YELLOW}Note: apiKeyHelper will be configured in settings.json when you first run 'claude-anthropic'${NC}"
+echo -e "${YELLOW}It will be removed when you run 'claude-pro' to restore default Claude behavior${NC}"
+echo -e "${YELLOW}Plain 'claude' command will always work as it did before installation${NC}"
+
 # --- 2. Script Installation ---
 
 echo ""
@@ -68,6 +108,7 @@ SCRIPTS=(
     "claude-status"
     "claude-sessions"
     "claude-switcher-utils.sh"
+    "claude-settings-manager.sh"
 )
 
 # Install each script

@@ -7,9 +7,36 @@ A collection of scripts to easily switch between different authentication modes 
 - **Multiple Providers**: Support for Anthropic API, AWS Bedrock, Google Vertex AI, and Microsoft Foundry on Azure.
 - **Model Switching**: Easily switch between Sonnet 4.5, Opus 4.1, Haiku 4.5, or custom models.
 - **Pro Plan Support**: Toggle back to standard Claude Pro web authentication.
+- **Seamless Switching**: Switch between providers and authentication methods without logout flows.
 - **Session Management**: Unique session IDs for tracking.
 - **Secure Configuration**: API keys stored in a separate, git-ignored file.
 - **System-Wide Access**: Scripts are installed to `/usr/local/bin` for easy access.
+
+## How It Works
+
+Claude Switcher uses two complementary approaches for provider switching:
+
+### API Key Helper (Anthropic API ↔ Pro/Max)
+
+For switching between **Claude Pro/Max subscription** and **Anthropic native API key**, claude-switcher uses Claude Code's `apiKeyHelper` setting **non-destructively**:
+
+1. **First `claude-anthropic` run**: Adds `apiKeyHelper` to `~/.claude/settings.json` (backed up first)
+2. **Mode tracking** in `~/.claude-switcher/current-mode.sh` stores your current provider (`pro` or `anthropic`)
+3. **Dynamic authentication**: The helper script returns your API key in `anthropic` mode, or nothing in `pro` mode (enabling web auth)
+4. **Running `claude-pro`**: Removes `apiKeyHelper` from settings.json, restoring original behavior
+5. **Plain `claude` unaffected**: Always works as it did before installation, unless you've explicitly run `claude-anthropic`
+
+**Key**: The switcher never modifies settings.json during installation—only when you explicitly choose to use Anthropic API mode
+### Environment Variables (AWS, Vertex AI, Azure)
+
+For **AWS Bedrock**, **Google Vertex AI**, and **Microsoft Foundry on Azure**, switching is even simpler:
+
+- Each provider has a dedicated environment variable (`CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_USE_VERTEX`, `CLAUDE_CODE_USE_FOUNDRY`)
+- Setting these automatically disables `/login` and `/logout` commands
+- No apiKeyHelper needed—Claude Code natively supports these providers
+- Scripts just set the appropriate environment variables and launch Claude Code
+
+**Result**: Seamless switching between any provider without logout flows, browser prompts, or authentication friction.
 
 ## Installation
 
@@ -20,11 +47,19 @@ cd claude-switcher
 ```
 
 ### 2. Run the Setup Script
-This script will install the necessary commands to `/usr/local/bin` and create your configuration directory. You may be prompted for your password to allow installation to system directories.
+This script will:
+- Install commands to `/usr/local/bin` for system-wide access
+- Create your configuration directory at `~/.claude-switcher/`
+- Install the API key helper script (but NOT activate it yet)
+- **Does NOT modify** your existing `~/.claude/settings.json`
+
+You may be prompted for your password to allow installation to system directories.
 
 ```bash
 ./setup.sh
 ```
+
+> **Important**: Setup does NOT modify your Claude configuration. Plain `claude` continues to work exactly as before. The apiKeyHelper is only activated when you explicitly run `claude-anthropic` for the first time, and is removed when you run `claude-pro`.
 
 ### 3. Configure Your Secrets
 The setup script creates a secrets file at `~/.claude-switcher/secrets.sh`. You must edit this file to add your API keys and credentials.
@@ -343,6 +378,98 @@ The setup script will update all commands with the latest model definitions whil
 
 ### Secrets
 Credentials are stored in `~/.claude-switcher/secrets.sh`. This file is not committed to the repository and is safe for your private keys.
+
+## Troubleshooting
+
+### Verify apiKeyHelper Setup
+
+Check if the API key helper is properly configured:
+
+```bash
+claude-status
+```
+
+This will show:
+- Whether `settings.json` has `apiKeyHelper` configured
+- Whether the helper script exists and is executable
+- Your current switcher mode (`pro`, `anthropic`, etc.)
+
+### Check Current Mode
+
+View your current mode:
+
+```bash
+cat ~/.claude-switcher/current-mode.sh
+```
+
+Should show something like:
+```bash
+export CLAUDE_SWITCHER_MODE="pro"
+# or
+export CLAUDE_SWITCHER_MODE="anthropic"
+```
+
+### Manually Reset to Pro Mode
+
+If you need to reset to Pro/Max subscription:
+
+```bash
+claude-pro
+# OR manually:
+echo 'export CLAUDE_SWITCHER_MODE="pro"' > ~/.claude-switcher/current-mode.sh
+```
+
+### Test apiKeyHelper Directly
+
+Verify the helper script works:
+
+```bash
+# Test in Pro mode (should output nothing)
+echo 'export CLAUDE_SWITCHER_MODE="pro"' > ~/.claude-switcher/current-mode.sh
+~/.claude-switcher/claude-api-key-helper.sh
+
+# Test in Anthropic mode (should output your API key)
+echo 'export CLAUDE_SWITCHER_MODE="anthropic"' > ~/.claude-switcher/current-mode.sh 
+~/.claude-switcher/claude-api-key-helper.sh
+```
+
+### Still Getting Rate Limits After Switching?
+
+If you switch from Pro to `claude-anthropic` but still see Pro plan rate limits:
+
+1. Verify API key is set: `grep ANTHROPIC_API_KEY ~/.claude-switcher/secrets.sh`
+2. Check current mode: `cat ~/.claude-switcher/current-mode.sh`
+3. Run `claude-status` to verify configuration
+4. Try running `claude-anthropic` again (not just `claude`)
+
+### Switching Back to Pro Not Working?
+
+If web authentication doesn't activate after running `claude-pro`:
+
+1. Check mode was set: `cat ~/.claude-switcher/current-mode.sh` (should show `pro`)
+2. Launch with `claude-pro` or plain `claude` command
+3. In Claude session, run `/status` to verify authentication method
+
+### AWS/Vertex/Azure Issues?
+
+These providers don't use apiKeyHelper - they rely on environment variables:
+
+- **AWS**: Verify `AWS_BEARER_TOKEN_BEDROCK` or AWS credentials are set
+- **Vertex**: Verify `gcloud auth application-default login` is complete
+- **Azure**: Verify `ANTHROPIC_FOUNDRY_API_KEY` or `az login` is complete
+
+Run `claude-status` to see provider-specific configuration.
+
+### Restore Original settings.json
+
+If you need to remove apiKeyHelper:
+
+```bash
+# Restore from backup
+cp ~/.claude/settings.json.backup-YYYYMMDD-HHMMSS ~/.claude/settings.json
+
+# Or manually remove apiKeyHelper line from settings.json
+```
 
 ## License
 

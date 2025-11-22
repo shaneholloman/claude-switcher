@@ -18,20 +18,56 @@ SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
 SAVED_ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 SAVED_AWS_BEARER_TOKEN_BEDROCK="$AWS_BEARER_TOKEN_BEDROCK"
 
-# Disable Bedrock and API Keys to force Web Auth
-export CLAUDE_CODE_USE_BEDROCK=0
-unset AWS_BEARER_TOKEN_BEDROCK
-unset ANTHROPIC_API_KEY
-unset ANTHROPIC_MODEL # Let Pro plan decide default
+# Source settings manager for state management
+source "$SCRIPT_DIR/claude-settings-manager.sh"
+
+# Save current apiKeyHelper state so we can restore it on exit
+# User might have their own apiKeyHelper configured
+save_api_key_helper_state
+
+# Temporarily remove apiKeyHelper for this Pro session
+# This allows using Pro subscription even if user normally uses API key
+if is_api_key_helper_configured; then
+    print_status "Temporarily disabling apiKeyHelper for Pro session...\"
+    # Backup before removing
+    cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.backup-$(date +%Y%m%d-%H%M%S)"
+    
+    if command -v jq &> /dev/null; then
+        jq 'del(.apiKeyHelper)' "$HOME/.claude/settings.json" > "$HOME/.claude/settings.json.tmp" && \
+            mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"
+    elif command -v python3 &> /dev/null; then
+        python3 << 'EOF'
+import json
+settings_file = "$HOME/.claude/settings.json"
+with open(settings_file, 'r') as f:
+    settings = json.load(f)
+if 'apiKeyHelper' in settings:
+    del settings['apiKeyHelper']
+with open(settings_file, 'w') as f:
+    json.dump(settings, f, indent=2)
+EOF
+    fi
+fi
+
+# Set mode to pro
+cat > "$CONFIG_DIR/current-mode.sh" << 'EOF'
+# Current claude-switcher mode
+# Used by apiKeyHelper to determine authentication method
+export CLAUDE_SWITCHER_MODE="pro"
+EOF
 
 print_success "Claude Pro Plan mode activated"
 print_status "- Using Web Authentication"
-print_status "- Login/logout enabled"
+print_status "- Plain 'claude' command runs in native state"
 
 print_status "Launching Claude Code..."
 
 restore_environment() {
-    print_status "Restoring original environment variables..."
+    print_status "Restoring original environment variables and settings..."
+    
+    # Restore apiKeyHelper to its original state
+    # This preserves user's existing apiKeyHelper if they had one
+    restore_api_key_helper_state
     
     if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then
         export CLAUDE_CODE_USE_BEDROCK="$SAVED_CLAUDE_CODE_USE_BEDROCK"

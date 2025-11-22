@@ -23,6 +23,30 @@ SAVED_ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 export CLAUDE_CODE_USE_BEDROCK=0
 unset AWS_BEARER_TOKEN_BEDROCK
 
+# Source settings manager for apiKeyHelper management
+source "$SCRIPT_DIR/claude-settings-manager.sh"
+
+# Save current apiKeyHelper state so we can restore it on exit
+# This preserves user's existing apiKeyHelper if they have one
+save_api_key_helper_state
+
+# Add our apiKeyHelper to settings.json
+print_status "Configuring apiKeyHelper for Anthropic API mode..."
+if add_api_key_helper; then
+    print_status "apiKeyHelper configured"
+else
+    print_error "Failed to configure apiKeyHelper"
+    exit 1
+fi
+
+# Set mode for apiKeyHelper to provide Anthropic API key
+# This causes apiKeyHelper to return ANTHROPIC_API_KEY, enabling API auth
+cat > "$CONFIG_DIR/current-mode.sh" << 'EOF'
+# Current claude-switcher mode
+# Used by apiKeyHelper to determine authentication method
+export CLAUDE_SWITCHER_MODE="anthropic"
+EOF
+
 # Ensure API Key is present
 if [ -z "$ANTHROPIC_API_KEY" ]; then
     print_error "ANTHROPIC_API_KEY is not set"
@@ -46,7 +70,7 @@ parse_model_args "ANTHROPIC" "$@"
 ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --opus|--sonnet)
+        --opus|--sonnet|--haiku)
             shift
             ;;
         --model)
@@ -62,17 +86,18 @@ done
 print_success "Claude Anthropic API mode activated"
 print_status "- Using Anthropic API"
 print_status "- Model: $ANTHROPIC_MODEL"
-
-# Important: Logout from Claude Pro to ensure API key is used
-# Claude Code prioritizes logged-in Pro subscription over ANTHROPIC_API_KEY
-print_status "Ensuring Claude Code uses API key (logging out of Claude Pro if needed)..."
-claude /logout > /dev/null 2>&1 || true
+print_status "- Mode set to 'anthropic' (apiKeyHelper will provide API key)"
 
 print_status "Launching Claude Code..."
 
 restore_environment() {
-    print_status "Restoring original environment variables..."
+    print_status "Restoring original environment variables and settings..."
     
+    # Restore apiKeyHelper to its original state (before we modified it)
+    # This preserves user's existing apiKeyHelper if they had one
+    restore_api_key_helper_state
+    
+    # Restore environment variables
     if [ -n "$SAVED_ANTHROPIC_MODEL" ]; then
         export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
     else
@@ -85,9 +110,6 @@ restore_environment() {
         unset CLAUDE_CODE_USE_BEDROCK
     fi
 
-    # We don't necessarily need to unset API key if it was set globally, 
-    # but if we loaded it from secrets just for this session, maybe we should?
-    # For now, let's restore to whatever it was (which might be empty).
     if [ -n "$SAVED_ANTHROPIC_API_KEY" ]; then
         export ANTHROPIC_API_KEY="$SAVED_ANTHROPIC_API_KEY"
     else
