@@ -66,6 +66,7 @@ fi
 
 # Store existing environment variables
 SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_ANTHROPIC_SMALL_FAST_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
 SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
 SAVED_CLAUDE_CODE_USE_VERTEX="$CLAUDE_CODE_USE_VERTEX"
 SAVED_CLAUDE_CODE_USE_FOUNDRY="$CLAUDE_CODE_USE_FOUNDRY"
@@ -115,6 +116,7 @@ print_success "Claude Microsoft Foundry on Azure mode activated"
 print_status "- Using Microsoft Foundry"
 print_status "- Resource: ${ANTHROPIC_FOUNDRY_RESOURCE:-$ANTHROPIC_FOUNDRY_BASE_URL}"
 print_status "- Model: $ANTHROPIC_MODEL"
+print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
 if [ -n "$az_account" ]; then
     print_status "- Authenticated via Azure CLI"
 fi
@@ -128,6 +130,12 @@ restore_environment() {
         export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
     else
         unset ANTHROPIC_MODEL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_SMALL_FAST_MODEL" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="$SAVED_ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        unset ANTHROPIC_SMALL_FAST_MODEL
     fi
     
     if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then

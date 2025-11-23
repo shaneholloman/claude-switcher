@@ -46,31 +46,58 @@ if [ -z "$CLOUD_ML_REGION" ]; then
 fi
 
 # Validate Google Cloud credentials
-if ! command -v gcloud &> /dev/null; then
-    print_error "gcloud CLI is not installed"
-    print_error ""
-    print_error "Please install the Google Cloud SDK:"
-    print_error "  https://cloud.google.com/sdk/docs/install"
-    print_error ""
-    print_error "Then authenticate with:"
-    print_error "  gcloud auth login"
-    print_error "  gcloud auth application-default login"
-    exit 1
-fi
+# Google Cloud authentication supports multiple methods with the following precedence:
+# 1. GOOGLE_APPLICATION_CREDENTIALS (service account key file)
+# 2. gcloud auth application-default credentials
+# 3. gcloud auth login (user credentials)
+#
+# Per Google Cloud best practices, we check in this order:
+AUTH_METHOD=""
 
-# Check if authenticated
-gcloud_account=$(gcloud config get-value account 2>/dev/null)
-if [ -z "$gcloud_account" ]; then
-    print_error "Not authenticated with Google Cloud"
-    print_error ""
-    print_error "Please authenticate with:"
-    print_error "  gcloud auth login"
-    print_error "  gcloud auth application-default login"
-    exit 1
+if [ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+    # Method 1: Service account key file
+    if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+        AUTH_METHOD="Service Account Key File"
+        print_status "Using service account key: $GOOGLE_APPLICATION_CREDENTIALS"
+    else
+        print_error "GOOGLE_APPLICATION_CREDENTIALS is set but file not found: $GOOGLE_APPLICATION_CREDENTIALS"
+        exit 1
+    fi
+elif [ -f "$HOME/.config/gcloud/application_default_credentials.json" ]; then
+    # Method 2: Application Default Credentials
+    AUTH_METHOD="Application Default Credentials"
+    print_status "Using Application Default Credentials"
+else
+    # Method 3: gcloud auth login (user credentials)
+    if ! command -v gcloud &> /dev/null; then
+        print_error "gcloud CLI is not installed and GOOGLE_APPLICATION_CREDENTIALS is not set"
+        print_error ""
+        print_error "Please either:"
+        print_error "  1. Set GOOGLE_APPLICATION_CREDENTIALS to point to a service account key file, OR"
+        print_error "  2. Install Google Cloud SDK and authenticate:"
+        print_error "     - Install: https://cloud.google.com/sdk/docs/install"
+        print_error "     - Authenticate: gcloud auth application-default login"
+        exit 1
+    fi
+    
+    # Check if authenticated with gcloud
+    gcloud_account=$(gcloud config get-value account 2>/dev/null)
+    if [ -z "$gcloud_account" ]; then
+        print_error "Not authenticated with Google Cloud and GOOGLE_APPLICATION_CREDENTIALS is not set"
+        print_error ""
+        print_error "Please either:"
+        print_error "  1. Authenticate with: gcloud auth application-default login (recommended), OR"
+        print_error "  2. Authenticate with: gcloud auth login, OR"
+        print_error "  3. Set GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json"
+        exit 1
+    fi
+    
+    AUTH_METHOD="gcloud User Credentials ($gcloud_account)"
 fi
 
 # Store existing environment variables
 SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_ANTHROPIC_SMALL_FAST_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
 SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
 SAVED_CLAUDE_CODE_USE_VERTEX="$CLAUDE_CODE_USE_VERTEX"
 
@@ -122,10 +149,11 @@ done
 
 print_success "Claude Vertex AI mode activated"
 print_status "- Using Google Vertex AI"
+print_status "- Auth method: $AUTH_METHOD"
 print_status "- Project: $ANTHROPIC_VERTEX_PROJECT_ID"
 print_status "- Region: $CLOUD_ML_REGION"
 print_status "- Model: $ANTHROPIC_MODEL"
-print_status "- Authenticated as: $gcloud_account"
+print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
 
 print_status "Launching Claude Code..."
 
@@ -138,10 +166,22 @@ restore_environment() {
         unset ANTHROPIC_MODEL
     fi
     
+    if [ -n "$SAVED_ANTHROPIC_SMALL_FAST_MODEL" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="$SAVED_ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        unset ANTHROPIC_SMALL_FAST_MODEL
+    fi
+    
     if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then
         export CLAUDE_CODE_USE_BEDROCK="$SAVED_CLAUDE_CODE_USE_BEDROCK"
     else
         unset CLAUDE_CODE_USE_BEDROCK
+    fi
+    
+    if [ -n "$SAVED_CLAUDE_CODE_USE_VERTEX" ]; then
+        export CLAUDE_CODE_USE_VERTEX="$SAVED_CLAUDE_CODE_USE_VERTEX"
+    else
+        unset CLAUDE_CODE_USE_VERTEX
     fi
     
     print_success "Environment restored"

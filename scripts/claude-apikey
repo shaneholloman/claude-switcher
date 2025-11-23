@@ -22,6 +22,7 @@ print_status "Session ID: $CLAUDE_SESSION_ID"
 
 # Store existing environment variables
 SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_ANTHROPIC_SMALL_FAST_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
 SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
 SAVED_ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 
@@ -93,6 +94,7 @@ done
 print_success "Claude Anthropic API mode activated"
 print_status "- Using Anthropic API"
 print_status "- Model: $ANTHROPIC_MODEL"
+print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
 print_status "- Mode set to 'anthropic' (apiKeyHelper will provide API key)"
 
 print_status "Launching Claude Code..."
@@ -113,6 +115,12 @@ restore_environment() {
         export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
     else
         unset ANTHROPIC_MODEL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_SMALL_FAST_MODEL" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="$SAVED_ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        unset ANTHROPIC_SMALL_FAST_MODEL
     fi
     
     if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then

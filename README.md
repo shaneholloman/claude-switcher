@@ -122,9 +122,28 @@ export AWS_REGION="us-west-2"
 
 **Google Vertex AI:**
 
+**Authentication Methods** (checked in this precedence order):
+
+1. **Service Account Key File** (highest precedence) - Recommended for production/CI
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+   ```
+
+2. **Application Default Credentials** - Recommended for local development
+   ```bash
+   gcloud auth application-default login
+   ```
+
+3. **gcloud User Credentials** (lowest precedence) - Fallback method
+   ```bash
+   gcloud auth login
+   ```
+
+The `claude-vertex` script automatically detects which method is available and uses the highest precedence one.
+
 **Setup Steps:**
 1. **Install Google Cloud SDK**: [Download here](https://cloud.google.com/sdk/docs/install)
-2. **Authenticate**: Run `gcloud auth application-default login`
+2. **Authenticate** using one of the methods above
 3. **Enable Vertex AI API**: [Click to enable](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com)
 4. **Enable Claude Models**: [Open Model Garden](https://console.cloud.google.com/vertex-ai/publishers/anthropic/model-garden/claude-sonnet-4) and click "Enable" on models you want to use
 5. **Configure secrets.sh**:
@@ -381,24 +400,68 @@ The scripts use provider-specific model variables that can be customized in `sec
 export CLAUDE_MODEL_SONNET_AWS="global.anthropic.claude-sonnet-4-5-20250929-v1:0"
 export CLAUDE_MODEL_OPUS_AWS="us.anthropic.claude-opus-4-1-20250805-v1:0"
 export CLAUDE_MODEL_HAIKU_AWS="us.anthropic.claude-haiku-4-5-20251001-v1:0"
+export CLAUDE_SMALL_FAST_MODEL_AWS="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 # Google Vertex AI
 export CLAUDE_MODEL_SONNET_VERTEX="claude-sonnet-4-5@20250929"
 export CLAUDE_MODEL_OPUS_VERTEX="claude-opus-4-1@20250805"
 export CLAUDE_MODEL_HAIKU_VERTEX="claude-haiku-4-5@20251001"
+export CLAUDE_SMALL_FAST_MODEL_VERTEX="claude-haiku-4-5@20251001"
 
 # Anthropic API
 export CLAUDE_MODEL_SONNET_ANTHROPIC="claude-sonnet-4-5-20250929"
 export CLAUDE_MODEL_OPUS_ANTHROPIC="claude-opus-4-1-20250805"
 export CLAUDE_MODEL_HAIKU_ANTHROPIC="claude-haiku-4-5"
+export CLAUDE_SMALL_FAST_MODEL_ANTHROPIC="claude-haiku-4-5"
 
 # Microsoft Foundry/Azure (deployment names)
 export CLAUDE_MODEL_SONNET_AZURE="claude-sonnet-4-5"
 export CLAUDE_MODEL_OPUS_AZURE="claude-opus-4-1"
 export CLAUDE_MODEL_HAIKU_AZURE="claude-haiku-4-5"
+export CLAUDE_SMALL_FAST_MODEL_AZURE="claude-haiku-4-5"
 ```
 
-These variables are used by the scripts to set `ANTHROPIC_MODEL` at runtime based on which provider you're using.
+These variables are used by the scripts to set `ANTHROPIC_MODEL` and `ANTHROPIC_SMALL_FAST_MODEL` at runtime based on which provider you're using.
+
+### Model Configuration: Main + Small/Fast Models
+
+Claude Code uses **two models** for optimal performance and cost efficiency:
+
+1. **`ANTHROPIC_MODEL`** - Your main model for interactive work
+   - Used for conversation, reasoning, and complex tasks
+   - Set via `--sonnet`, `--opus`, `--haiku` flags or `--model` override
+   - Examples: Sonnet 4.5, Opus 4.1, Haiku 4.5
+
+2. **`ANTHROPIC_SMALL_FAST_MODEL`** - Background operations model  
+   - Used for sub-agents, file operations, and auxiliary tasks
+   - **Defaults to Haiku** for each provider
+   - Reduces costs for background work
+   - See [Claude Code docs](https://code.claude.com/docs/en/model-config#environment-variables)
+
+**How It Works:**
+
+Both models follow the **same configuration pattern**:
+
+- **Defaults** in `config/models.sh`:
+  ```bash
+  export CLAUDE_SMALL_FAST_MODEL_AWS="${CLAUDE_SMALL_FAST_MODEL_AWS:-${CLAUDE_MODEL_HAIKU_AWS}}"
+  export CLAUDE_SMALL_FAST_MODEL_VERTEX="${CLAUDE_SMALL_FAST_MODEL_VERTEX:-${CLAUDE_MODEL_HAIKU_VERTEX}}"
+  ```
+
+- **Overrides** in `~/.claude-switcher/secrets.sh`:
+  ```bash
+  # Use a custom small/fast model for AWS
+  export CLAUDE_SMALL_FAST_MODEL_AWS="us.anthropic.claude-3-5-haiku-20241022-v1:0"
+  ```
+
+- **Runtime**: Scripts set `ANTHROPIC_SMALL_FAST_MODEL` from the appropriate provider variable
+
+**Example:**
+```bash
+claude-aws --opus
+# Sets: ANTHROPIC_MODEL = Opus 4.1 (your choice)
+#       ANTHROPIC_SMALL_FAST_MODEL = Haiku 4.5 (auto, from CLAUDE_SMALL_FAST_MODEL_AWS)
+```
 
 ### Updating to New Models
 When new Claude models are released:

@@ -25,6 +25,25 @@
 # export ANTHROPIC_VERTEX_PROJECT_ID="your_gcp_project_id"
 # export CLOUD_ML_REGION="global"  # or "us-east5", "us-central1", etc.
 
+# Google Cloud Authentication Methods (in precedence order):
+# 
+# Method 1: Service Account Key File (highest precedence)
+#   Recommended for production/CI environments
+#   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+#
+# Method 2: Application Default Credentials
+#   Recommended for local development
+#   Run: gcloud auth application-default login
+#   No additional environment variable needed
+#
+# Method 3: gcloud User Credentials (lowest precedence)
+#   Fallback for basic authentication
+#   Run: gcloud auth login
+#   No additional environment variable needed
+#
+# The claude-vertex script automatically detects and uses the appropriate method
+# based on what's available in your environment.
+
 # Optional: Set specific regions for each model (defaults to CLOUD_ML_REGION if not set)
 # export VERTEX_REGION_CLAUDE_3_5_SONNET="us-east5"
 # export VERTEX_REGION_CLAUDE_3_5_HAIKU="us-east5"
@@ -78,3 +97,22 @@
 # export CLAUDE_MODEL_SONNET_AZURE="claude-sonnet-4-5"
 # export CLAUDE_MODEL_OPUS_AZURE="claude-opus-4-1"
 # export CLAUDE_MODEL_HAIKU_AZURE="claude-haiku-4-5"
+
+# ============================================================================
+# Small/Fast Model Overrides (Optional)
+# ============================================================================
+# Claude Code uses a "small/fast model" for background operations like file ops
+# and sub-agents. By default, this uses each provider's Haiku model.
+# You can override these if you want to use a different model for background tasks.
+
+# AWS Bedrock Small/Fast Model
+# export CLAUDE_SMALL_FAST_MODEL_AWS="us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Google Vertex Small/Fast Model
+# export CLAUDE_SMALL_FAST_MODEL_VERTEX="claude-haiku-4-5@20251001"
+
+# Anthropic API Small/Fast Model
+# export CLAUDE_SMALL_FAST_MODEL_ANTHROPIC="claude-haiku-4-5"
+
+# Microsoft Foundry/Azure Small/Fast Model (deployment name)
+# export CLAUDE_SMALL_FAST_MODEL_AZURE="claude-haiku-4-5"

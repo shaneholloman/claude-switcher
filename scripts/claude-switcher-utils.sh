@@ -66,7 +66,11 @@ load_config() {
 
 # Helper to parse model arguments
 # Usage: parse_model_args "PROVIDER_SUFFIX" "$@"
-# Sets ANTHROPIC_MODEL based on flags
+# Sets ANTHROPIC_MODEL (main model) and ANTHROPIC_SMALL_FAST_MODEL (for background operations)
+# Per Claude Code docs, the small/fast model is used for:
+#   - Background file operations
+#   - Sub-agent operations  
+#   - Other auxiliary tasks
 parse_model_args() {
     local provider="$1"
     shift
@@ -117,6 +121,17 @@ parse_model_args() {
             print_warning "No model configuration found for ${selected_model} on ${provider}"
             print_warning "Set ${model_var} in secrets.sh"
         fi
+    fi
+    
+    # Set the small/fast model for background operations (sub-agents, file ops, etc.)
+    # Uses CLAUDE_SMALL_FAST_MODEL_{PROVIDER} which defaults to Haiku but can be overridden
+    local small_fast_var="CLAUDE_SMALL_FAST_MODEL_${provider}"
+    if [ -n "${!small_fast_var}" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="${!small_fast_var}"
+        print_status "Small/Fast Model (background ops): $ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        print_warning "No small/fast model configured for ${provider}"
+        print_warning "Background operations may use Claude Code defaults"
     fi
 }
 

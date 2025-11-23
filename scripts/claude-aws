@@ -67,6 +67,7 @@ fi
 # Store existing environment variables to restore after Claude exits
 SAVED_AWS_REGION="$AWS_REGION"
 SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_ANTHROPIC_SMALL_FAST_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
 SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
 
 # Enable Bedrock for current session
@@ -107,6 +108,7 @@ print_status "- Using AWS Bedrock API"
 print_status "- Auth method: $AUTH_METHOD"
 print_status "- Region: $AWS_REGION"
 print_status "- Model: $ANTHROPIC_MODEL"
+print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
 
 print_status "Launching Claude Code..."
 
@@ -124,6 +126,12 @@ restore_environment() {
         export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
     else
         unset ANTHROPIC_MODEL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_SMALL_FAST_MODEL" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="$SAVED_ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        unset ANTHROPIC_SMALL_FAST_MODEL
     fi
     
     if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then
