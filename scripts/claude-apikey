@@ -66,8 +66,9 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     exit 1
 fi
 
-# Export the API key for Claude Code to use
-export ANTHROPIC_API_KEY
+# Note: We do NOT export ANTHROPIC_API_KEY here to avoid conflict with apiKeyHelper
+# The apiKeyHelper script will read it directly from secrets.sh
+# This prevents Claude CLI from seeing both a token (apiKeyHelper) and an API key (env var)
 
 # Parse arguments to select model
 parse_model_args "ANTHROPIC" "$@"
@@ -95,6 +96,10 @@ print_status "- Model: $ANTHROPIC_MODEL"
 print_status "- Mode set to 'anthropic' (apiKeyHelper will provide API key)"
 
 print_status "Launching Claude Code..."
+
+# Unset ANTHROPIC_API_KEY to prevent auth conflict with apiKeyHelper
+# The helper script will provide the key by reading secrets.sh internally
+unset ANTHROPIC_API_KEY
 
 restore_environment() {
     print_status "Restoring original environment variables and settings..."

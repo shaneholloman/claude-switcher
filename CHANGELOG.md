@@ -5,6 +5,12 @@ All notable changes to claude-switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-22
+
+### Fixed
+- **Authentication conflict**: claude-apikey no longer exports ANTHROPIC_API_KEY as an environment variable, preventing "Auth conflict" warning from Claude CLI
+- apiKeyHelper now reads the API key directly from secrets.sh, avoiding dual authentication method detection
+
 ## [1.0.0] - 2025-11-22
 
 ### Added
