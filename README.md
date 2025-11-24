@@ -11,6 +11,8 @@ Never get blocked by rate limits again! Jump between your Claude Pro/Max subscri
 
 Startups: Get the most from your Claude subscription PLUS use your free Cloud Credits.
 
+Claude Pro users: Easily switch to Opus 4.5 on any provider when you need its power, without the need for a Max Subscription ($200/mo).
+
 Claude Switcher is brought to you by the team from [Andi AI](https://andisearch.com).
 
 > [!TIP]
@@ -55,11 +57,11 @@ Claude Switcher is brought to you by the team from [Andi AI](https://andisearch.
    claude-aws          # Use AWS Bedrock
    claude-vertex       # Use Google Vertex AI
    claude-apikey       # Use Anthropic API
-   claude-azure        # Use Microsoft Azure
+   claude-azure --opus # Use Microsoft Azure with Opus 4.5
    
    # Continue your last conversation on any provider
    claude-aws --resume
-   claude-vertex --resume
+   claude-vertex --opus --resume
 
    # Switch back to your native Claude Code
    claude --resume
