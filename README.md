@@ -1,5 +1,10 @@
 # Claude Switcher
 
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github&style=for-the-badge)](https://github.com/sponsors/andisearch)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-Support-yellow?logo=buy-me-a-coffee&style=for-the-badge)](https://buymeacoffee.com/andisearch)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-blue?logo=paypal&style=for-the-badge)](https://www.paypal.me/lazywebai)
+[![GitHub Stars](https://img.shields.io/github/stars/andisearch/claude-switcher?style=for-the-badge&logo=github)](https://github.com/andisearch/claude-switcher/stargazers)
+
 A collection of scripts to easily switch between different authentication modes and model providers for [Claude Code](https://claude.ai/code).
 
 Never get stopped by rate limits again! Jump between your Claude Pro/Max subscription and API keys from Anthropic, AWS, Google Cloud and now Microsoft Azure on the fly and pick up where you left off.
@@ -7,6 +12,9 @@ Never get stopped by rate limits again! Jump between your Claude Pro/Max subscri
 BONUS: Startups can use their compute credits across multiple clouds to run Claude Code; either as a companion to their subscription or purely with API keys.
 
 Claude Switcher is brought to you by the team from [Andi AI](https://andisearch.com).
+
+> [!TIP]
+> **Love this project?** ⭐ **[Star this repo](https://github.com/andisearch/claude-switcher)** to show your support and help others discover it! If Claude Switcher saves you time and frustration, consider [buying us a coffee](https://buymeacoffee.com/andisearch) or [sponsoring on GitHub](https://github.com/sponsors/andisearch). Every contribution helps us maintain and improve this tool!
 
 ## Features
 
@@ -598,6 +606,37 @@ git commit -m "Bump version to x.y.z"
 git tag -a vx.y.z -m "Release vx.y.z: Description"
 git push origin main && git push origin vx.y.z
 ```
+
+## Support This Project
+
+**Claude Switcher is free and open source**, built with ❤️ to help developers be more productive with Claude Code.
+
+If you find this tool valuable, here's how you can support its development:
+
+### ⭐ Star This Repo
+The simplest way to show your support is to **[give us a star on GitHub](https://github.com/andisearch/claude-switcher)**! It helps others discover the project and motivates us to keep improving it.
+
+[![GitHub Stars](https://img.shields.io/github/stars/andisearch/claude-switcher?style=social)](https://github.com/andisearch/claude-switcher/stargazers)
+
+### 💖 Donate
+Development and maintenance take time and effort. Your financial support helps us:
+- Keep the project up-to-date with new Claude models and providers
+- Respond to issues and feature requests
+- Improve documentation and add new features
+- Maintain compatibility across platforms
+
+**Choose your preferred platform:**
+
+- 🩷 **[GitHub Sponsors](https://github.com/sponsors/andisearch)** - Recurring or one-time support
+- ☕ **[Buy Me a Coffee](https://buymeacoffee.com/andisearch)** - Quick one-time donation
+- 💙 **[PayPal](https://www.paypal.me/lazywebai)** - Direct donation via PayPal
+
+> Every contribution, no matter the size, makes a real difference. Thank you for considering supporting our work! 🙏
+
+### 🤝 Other Ways to Help
+- **Share**: Tell your colleagues and friends about Claude Switcher
+- **Contribute**: Submit bug reports, feature requests, or pull requests
+- **Feedback**: Let us know how you're using Claude Switcher and how we can improve it
 
 ## Acknowledgments
 
