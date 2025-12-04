@@ -5,6 +5,18 @@ All notable changes to claude-switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-12-04
+
+### Fixed
+- **Critical Bug Fixes in `claude-pro` script**:
+  - **Syntax Error (Line 40)**: Removed malformed backslash-quote causing "unexpected EOF while looking for matching `"'" error
+  - **Authentication Conflict**: Added missing `unset ANTHROPIC_API_KEY` to prevent "Auth conflict" warning
+    - Now properly unsets `ANTHROPIC_API_KEY` before launching Claude Code (matching pattern from other scripts)
+    - Ensures only web authentication is active for Claude Pro/Max sessions
+    - Environment variable is still saved and restored on exit
+  - Script now passes bash syntax validation and runs without authentication conflicts
+  - Thanks to Reddit user for reporting the initial syntax issue
+
 ## [1.0.7] - 2025-11-24
 
 ### Changed
