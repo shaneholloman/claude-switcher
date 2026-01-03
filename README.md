@@ -50,6 +50,9 @@ Claude Switcher is brought to you by the team from [Andi AI](https://andisearch.
    # Microsoft Foundry on Azure Credentials
    export ANTHROPIC_FOUNDRY_API_KEY="my-azure-foundry-project-api-key"
    export ANTHROPIC_FOUNDRY_RESOURCE="my-azure-foundry-resource-name"
+   
+   # Vercel AI Gateway Credentials
+   export VERCEL_AI_GATEWAY_TOKEN="vck_..."
    ```
 
 3. **Start switching between providers:**
@@ -58,6 +61,7 @@ Claude Switcher is brought to you by the team from [Andi AI](https://andisearch.
    claude-vertex       # Use Google Vertex AI
    claude-apikey       # Use Anthropic API
    claude-azure --opus # Use Microsoft Azure with Opus 4.5
+   claude-vercel       # Use Vercel AI Gateway (failover, unified billing)
    
    # Continue your last conversation on any provider
    claude-aws --resume
@@ -71,7 +75,7 @@ That's it! See below for detailed configuration options and advanced features.
 
 ## Features
 
-- **Multiple Providers**: Support for Anthropic API, AWS Bedrock, Google Vertex AI, and Microsoft Foundry on Azure.
+- **Multiple Providers**: Support for Anthropic API, AWS Bedrock, Google Vertex AI, Microsoft Foundry on Azure, and Vercel AI Gateway.
 - **Model Switching**: Easily switch between Sonnet 4.5, Opus 4.5, Haiku 4.5, or custom models.
 - **Pro Plan Support**: Toggle back to standard Claude Pro or Max subscriptions with native web authentication.
 - **Seamless Switching**: Switch between providers and authentication methods without logout flows.
@@ -187,6 +191,23 @@ See Anthropic's [Microsoft Foundry instructions](https://code.claude.com/docs/en
 
 > **Note**: Use the default deployment names or set custom names to match what you created in Azure: `CLAUDE_MODEL_SONNET_AZURE`, `CLAUDE_MODEL_HAIKU_AZURE`, `CLAUDE_MODEL_OPUS_AZURE`.
 
+**Vercel AI Gateway:**
+
+Route Claude Code through Vercel's AI Gateway for failover, unified billing, and spend management ([announcement](https://x.com/rauchg/status/2007556249437778419)).
+
+**Setup Steps:**
+1. Create a Vercel account and go to [AI Gateway settings](https://vercel.com/dashboard/~/ai)
+2. Generate an API key (starts with `vck_`)
+3. **Configure secrets.sh**:
+   ```bash
+   export VERCEL_AI_GATEWAY_TOKEN="vck_..."
+   export VERCEL_AI_GATEWAY_URL="https://ai-gateway.vercel.sh"  # Optional, this is the default
+   ```
+
+See [Vercel AI Gateway docs](https://vercel.com/ai-gateway) for more details.
+
+> **Note**: Vercel AI Gateway provides automatic failover (e.g., to AWS Bedrock) and unified billing across all AI providers.
+
 #### Overriding Defaults (Optional)
 You can override default model IDs or regions in the same `secrets.sh` file. This is useful for testing new models or using custom endpoints.
 
@@ -248,6 +269,7 @@ Once installed, use these commands from any terminal window:
 | **Google Vertex AI** | `claude-vertex` | `--opus`, `--haiku`, `--sonnet` (default) | `--model "claude-sonnet-4-5@20250929"` |
 | **Anthropic API** | `claude-apikey` | `--opus`, `--haiku`, `--sonnet` (default) | `--model "claude-sonnet-4-5-20250929"` |
 | **Microsoft Azure** | `claude-azure` | `--opus`, `--haiku`, `--sonnet` (default) | `--model "my-custom-deployment"` |
+| **Vercel AI Gateway** | `claude-vercel` | `--opus`, `--haiku`, `--sonnet` (default) | `--model "anthropic/claude-sonnet-4.5"` |
 | **Claude Pro/Max** | `claude-pro` or `claude` | N/A - uses subscription | N/A |
 
 **Examples:**

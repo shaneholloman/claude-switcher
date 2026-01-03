@@ -44,6 +44,13 @@ export CLAUDE_MODEL_SONNET_AZURE="${CLAUDE_MODEL_SONNET_AZURE:-claude-sonnet-4-5
 export CLAUDE_MODEL_OPUS_AZURE="${CLAUDE_MODEL_OPUS_AZURE:-claude-opus-4-5}"
 export CLAUDE_MODEL_HAIKU_AZURE="${CLAUDE_MODEL_HAIKU_AZURE:-claude-haiku-4-5}"
 
+# Vercel AI Gateway Model Defaults
+# See: https://vercel.com/ai-gateway
+# Uses format: anthropic/model-name (no date suffix)
+export CLAUDE_MODEL_SONNET_VERCEL="${CLAUDE_MODEL_SONNET_VERCEL:-anthropic/claude-sonnet-4.5}"
+export CLAUDE_MODEL_OPUS_VERCEL="${CLAUDE_MODEL_OPUS_VERCEL:-anthropic/claude-opus-4}"
+export CLAUDE_MODEL_HAIKU_VERCEL="${CLAUDE_MODEL_HAIKU_VERCEL:-anthropic/claude-3.5-haiku}"
+
 # Small/Fast Model Defaults (for background operations)
 # These are used by Claude Code for sub-agents, file operations, and auxiliary tasks
 # Default to Haiku for each provider but can be overridden in secrets.sh
@@ -51,6 +58,7 @@ export CLAUDE_SMALL_FAST_MODEL_AWS="${CLAUDE_SMALL_FAST_MODEL_AWS:-${CLAUDE_MODE
 export CLAUDE_SMALL_FAST_MODEL_VERTEX="${CLAUDE_SMALL_FAST_MODEL_VERTEX:-${CLAUDE_MODEL_HAIKU_VERTEX}}"
 export CLAUDE_SMALL_FAST_MODEL_ANTHROPIC="${CLAUDE_SMALL_FAST_MODEL_ANTHROPIC:-${CLAUDE_MODEL_HAIKU_ANTHROPIC}}"
 export CLAUDE_SMALL_FAST_MODEL_AZURE="${CLAUDE_SMALL_FAST_MODEL_AZURE:-${CLAUDE_MODEL_HAIKU_AZURE}}"
+export CLAUDE_SMALL_FAST_MODEL_VERCEL="${CLAUDE_SMALL_FAST_MODEL_VERCEL:-${CLAUDE_MODEL_HAIKU_VERCEL}}"
 
 # ============================================================================
 # DUAL MODEL CONFIGURATION

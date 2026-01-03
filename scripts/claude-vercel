@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# Source utils
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/claude-switcher-utils.sh"
+
+# Display banner
+display_banner
+
+# Handle --version flag
+if [[ "$1" == "--version" ]] || [[ "$1" == "-v" ]]; then
+    echo "claude-switcher v$SWITCHER_VERSION"
+    exit 0
+fi
+
+# Load config and secrets
+load_config
+
+# Generate unique session identifier
+CLAUDE_SESSION_ID="vercel-$$-$(date +%s)"
+export CLAUDE_SESSION_ID
+
+print_status "Switching to Claude Vercel AI Gateway mode..."
+print_status "Session ID: $CLAUDE_SESSION_ID"
+
+# Validate Vercel AI Gateway credentials
+if [ -z "$VERCEL_AI_GATEWAY_TOKEN" ]; then
+    print_error "VERCEL_AI_GATEWAY_TOKEN is not set"
+    print_error ""
+    print_error "To use Vercel AI Gateway mode, configure in your secrets.sh:"
+    print_error ""
+    print_error "  export VERCEL_AI_GATEWAY_TOKEN=\"vck_...\""
+    print_error "  export VERCEL_AI_GATEWAY_URL=\"https://ai-gateway.vercel.sh\"  # Optional"
+    print_error ""
+    print_error "Get your token from: https://vercel.com/dashboard/~/ai"
+    print_error "See: https://vercel.com/ai-gateway"
+    exit 1
+fi
+
+# Set default gateway URL if not specified
+VERCEL_AI_GATEWAY_URL="${VERCEL_AI_GATEWAY_URL:-https://ai-gateway.vercel.sh}"
+
+# Store existing environment variables to restore after Claude exits
+SAVED_ANTHROPIC_MODEL="$ANTHROPIC_MODEL"
+SAVED_ANTHROPIC_SMALL_FAST_MODEL="$ANTHROPIC_SMALL_FAST_MODEL"
+SAVED_ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+SAVED_ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL"
+SAVED_ANTHROPIC_AUTH_TOKEN="$ANTHROPIC_AUTH_TOKEN"
+SAVED_CLAUDE_CODE_USE_BEDROCK="$CLAUDE_CODE_USE_BEDROCK"
+
+# Source settings manager for apiKeyHelper management
+source "$SCRIPT_DIR/claude-settings-manager.sh"
+
+# Save current apiKeyHelper state so we can restore it on exit
+# User might have their own apiKeyHelper configured
+save_api_key_helper_state
+
+# Temporarily remove apiKeyHelper for this Vercel session
+# ANTHROPIC_AUTH_TOKEN conflicts with apiKeyHelper, same as the issue claude-pro faces
+if is_api_key_helper_configured; then
+    print_status "Temporarily disabling apiKeyHelper for Vercel session..."
+    # Backup before removing
+    cp "$HOME/.claude/settings.json" "$HOME/.claude/settings.json.backup-$(date +%Y%m%d-%H%M%S)"
+    
+    if command -v jq &> /dev/null; then
+        jq 'del(.apiKeyHelper)' "$HOME/.claude/settings.json" > "$HOME/.claude/settings.json.tmp" && \
+            mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"
+    elif command -v python3 &> /dev/null; then
+        python3 << 'EOF'
+import json
+import os
+settings_file = os.path.expanduser("~/.claude/settings.json")
+with open(settings_file, 'r') as f:
+    settings = json.load(f)
+if 'apiKeyHelper' in settings:
+    del settings['apiKeyHelper']
+with open(settings_file, 'w') as f:
+    json.dump(settings, f, indent=2)
+EOF
+    fi
+fi
+
+# Disable other providers
+export CLAUDE_CODE_USE_BEDROCK=0
+unset AWS_BEARER_TOKEN_BEDROCK
+
+# Configure Vercel AI Gateway
+# Per rauchg's tweet: Set ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, and ANTHROPIC_API_KEY=""
+export ANTHROPIC_BASE_URL="$VERCEL_AI_GATEWAY_URL"
+export ANTHROPIC_AUTH_TOKEN="$VERCEL_AI_GATEWAY_TOKEN"
+export ANTHROPIC_API_KEY=""  # Must be empty to avoid auth conflicts
+
+# Parse arguments to select model
+parse_model_args "VERCEL" "$@"
+
+# Strip our custom flags
+ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --opus|--sonnet|--haiku)
+            shift
+            ;;
+        --model)
+            shift 2
+            ;;
+        *)
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+print_success "Claude Vercel AI Gateway mode activated"
+print_status "- Gateway URL: $VERCEL_AI_GATEWAY_URL"
+print_status "- Auth Token: ${VERCEL_AI_GATEWAY_TOKEN:0:10}... (hidden)"
+print_status "- Model: $ANTHROPIC_MODEL"
+print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
+
+print_status "Launching Claude Code..."
+
+# Write session information for tracking
+write_session_info \
+    "Vercel AI Gateway" \
+    "BYOK" \
+    "$ANTHROPIC_MODEL" \
+    "$ANTHROPIC_SMALL_FAST_MODEL" \
+    "" \
+    "" \
+    "Vercel Token"
+
+# Function to restore original environment variables
+restore_environment() {
+    print_status "Restoring original environment variables and settings..."
+    
+    # Clean up session tracking file
+    cleanup_session_info
+    
+    # Restore apiKeyHelper to its original state
+    # This preserves user's existing apiKeyHelper if they had one
+    restore_api_key_helper_state
+    
+    if [ -n "$SAVED_ANTHROPIC_MODEL" ]; then
+        export ANTHROPIC_MODEL="$SAVED_ANTHROPIC_MODEL"
+    else
+        unset ANTHROPIC_MODEL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_SMALL_FAST_MODEL" ]; then
+        export ANTHROPIC_SMALL_FAST_MODEL="$SAVED_ANTHROPIC_SMALL_FAST_MODEL"
+    else
+        unset ANTHROPIC_SMALL_FAST_MODEL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_API_KEY" ]; then
+        export ANTHROPIC_API_KEY="$SAVED_ANTHROPIC_API_KEY"
+    else
+        unset ANTHROPIC_API_KEY
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_BASE_URL" ]; then
+        export ANTHROPIC_BASE_URL="$SAVED_ANTHROPIC_BASE_URL"
+    else
+        unset ANTHROPIC_BASE_URL
+    fi
+    
+    if [ -n "$SAVED_ANTHROPIC_AUTH_TOKEN" ]; then
+        export ANTHROPIC_AUTH_TOKEN="$SAVED_ANTHROPIC_AUTH_TOKEN"
+    else
+        unset ANTHROPIC_AUTH_TOKEN
+    fi
+    
+    if [ -n "$SAVED_CLAUDE_CODE_USE_BEDROCK" ]; then
+        export CLAUDE_CODE_USE_BEDROCK="$SAVED_CLAUDE_CODE_USE_BEDROCK"
+    else
+        unset CLAUDE_CODE_USE_BEDROCK
+    fi
+    
+    print_success "Environment restored"
+}
+
+trap restore_environment EXIT
+
+# Launch Claude Code
+claude "${ARGS[@]}"

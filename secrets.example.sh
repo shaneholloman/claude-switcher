@@ -56,6 +56,13 @@
 # See: https://console.anthropic.com/
 # export ANTHROPIC_API_KEY="sk-ant-..."
 
+# Vercel AI Gateway Credentials
+# See: https://vercel.com/ai-gateway
+# Route Claude Code through Vercel AI Gateway for failover and unified billing
+# Get your token from Vercel dashboard: https://vercel.com/dashboard/~/ai
+# export VERCEL_AI_GATEWAY_TOKEN="vck_..."
+# export VERCEL_AI_GATEWAY_URL="https://ai-gateway.vercel.sh"  # Default, can be customized
+
 # Microsoft Foundry on Azure Credentials
 # See: https://code.claude.com/docs/en/microsoft-foundry
 # Announced Nov 18, 2024: https://www.anthropic.com/news/claude-in-microsoft-foundry
