@@ -13,12 +13,20 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/claude-switcher-utils.sh"
 
+# Capture stdin early if being piped to (not a TTY)
+# Must happen before argument parsing
+STDIN_CONTENT=""
+if [[ ! -t 0 ]]; then
+    STDIN_CONTENT=$(cat)
+fi
+
 # Parse arguments
 PROVIDER=""
 PROVIDER_ARGS=()  # Model flags for provider
 CLAUDE_ARGS=()    # Pass-through to claude
 MD_FILE=""
 NEEDS_VERBOSE=false  # Track if --output-format stream-json is used
+STDIN_POSITION="prepend"  # Default: stdin content comes before file content
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -58,6 +66,15 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             shift ;;
+        
+        # Stdin position for piped input
+        --stdin-position)
+            STDIN_POSITION="$2"
+            if [[ "$STDIN_POSITION" != "prepend" && "$STDIN_POSITION" != "append" ]]; then
+                print_error "Invalid --stdin-position: $2 (must be 'prepend' or 'append')"
+                exit 1
+            fi
+            shift 2 ;;
         
         # Version flag
         --version|-v)
@@ -100,7 +117,13 @@ SHEBANG MODE FLAGS (pass to claude -p):
   --output-format <fmt>   Output format: text, json, stream-json
   --max-budget-usd <amt>  Maximum API spend
   --json-schema <schema>  Enforce JSON structure
+  --stdin-position <pos>  Where to place piped input: 'prepend' (default) or 'append'
   All other claude flags are passed through.
+
+STDIN PIPING:
+  Pipe data into scripts for Unix-style workflows:
+    echo '{"key": "value"}' | ./analyze.md      # Stdin prepended to prompt
+    cat data.txt | ./summarize.md --stdin-position append
 
 SECURITY WARNING:
   Shebang mode runs AI-generated code without interactive approval.
@@ -124,6 +147,26 @@ if [[ -n "$MD_FILE" ]]; then
         CONTENT=$(tail -n +2 "$MD_FILE")
     else
         CONTENT=$(cat "$MD_FILE")
+    fi
+    
+    # Integrate stdin content if available
+    if [[ -n "$STDIN_CONTENT" ]]; then
+        if [[ "$STDIN_POSITION" == "prepend" ]]; then
+            CONTENT="The following input was provided via stdin:
+---
+$STDIN_CONTENT
+---
+
+$CONTENT"
+        else
+            # append
+            CONTENT="$CONTENT
+
+---
+The following input was provided via stdin:
+---
+$STDIN_CONTENT"
+        fi
     fi
     
     # Build execution command

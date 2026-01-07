@@ -11,15 +11,16 @@ DBLUE='\033[0;34m'     # Regular Blue for tagline
 RESET='\033[0m'        # Reset color
 
 show_banner() {
-    echo -e "${BLUE}┌─────────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BLUE}│${CYAN}   _____ _                 _        ____          _ _       _        ${BLUE}│${RESET}"
-    echo -e "${BLUE}│${CYAN}  / ____| | __ _ _   _  __| | ___  / ___|_      _(_) |_ ___| |__     ${BLUE}│${RESET}"
-    echo -e "${BLUE}│${CYAN} | |    | |/ _\` | | | |/ _\` |/ _ \ \___ \ \ /\ / / | __/ __| '_ \    ${BLUE}│${RESET}"
-    echo -e "${BLUE}│${CYAN} | |____| | (_| | |_| | (_| |  __/  ___) \ V  V /| | || (__| | | |   ${BLUE}│${RESET}"
-    echo -e "${BLUE}│${CYAN}  \_____|_|\__,_|\__,_|\__,_|\___| |____/ \_/\_/ |_|\__\___|_| |_|   ${BLUE}│${RESET}"
-    echo -e "${BLUE}│                                                                     │${RESET}"
-    echo -e "${BLUE}│${DBLUE}                     Brought to you by Andi AI                       ${BLUE}│${RESET}"
-    echo -e "${BLUE}└─────────────────────────────────────────────────────────────────────┘${RESET}"
-    echo ""
+    # All banner output goes to stderr to keep stdout clean for piping
+    echo -e "${BLUE}┌─────────────────────────────────────────────────────────────────────┐${RESET}" >&2
+    echo -e "${BLUE}│${CYAN}   _____ _                 _        ____          _ _       _        ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}│${CYAN}  / ____| | __ _ _   _  __| | ___  / ___|_      _(_) |_ ___| |__     ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}│${CYAN} | |    | |/ _\` | | | |/ _\` |/ _ \ \___ \ \ /\ / / | __/ __| '_ \    ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}│${CYAN} | |____| | (_| | |_| | (_| |  __/  ___) \ V  V /| | || (__| | | |   ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}│${CYAN}  \_____|_|\__,_|\__,_|\__,_|\___| |____/ \_/\_/ |_|\__\___|_| |_|   ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}│                                                                     │${RESET}" >&2
+    echo -e "${BLUE}│${DBLUE}                     Brought to you by Andi AI                       ${BLUE}│${RESET}" >&2
+    echo -e "${BLUE}└─────────────────────────────────────────────────────────────────────┘${RESET}" >&2
+    echo "" >&2
 }
 

@@ -7,6 +7,12 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Determine if stdout is connected to a terminal (interactive mode)
+# Used to suppress banners/colors when output is piped
+is_interactive() {
+    [[ -t 1 ]]  # File descriptor 1 (stdout) is a TTY
+}
+
 # Configuration Paths
 CONFIG_DIR="${HOME}/.claude-switcher"
 SECRETS_FILE="${CONFIG_DIR}/secrets.sh"
@@ -14,7 +20,11 @@ MODELS_FILE="${CONFIG_DIR}/models.sh"
 BANNER_FILE="${CONFIG_DIR}/banner.sh"
 
 # Display banner function - sources and calls the show_banner function from banner.sh
+# Only shows in interactive mode (when stdout is a terminal)
 display_banner() {
+    if ! is_interactive; then
+        return
+    fi
     if [ -f "$BANNER_FILE" ]; then
         source "$BANNER_FILE"
         show_banner
@@ -41,19 +51,19 @@ else
 fi
 
 print_status() {
-    echo -e "${BLUE}[Claude Switcher]${NC} $1"
+    echo -e "${BLUE}[Claude Switcher]${NC} $1" >&2
 }
 
 print_success() {
-    echo -e "${GREEN}[Claude Switcher]${NC} $1"
+    echo -e "${GREEN}[Claude Switcher]${NC} $1" >&2
 }
 
 print_warning() {
-    echo -e "${YELLOW}[Claude Switcher]${NC} $1"
+    echo -e "${YELLOW}[Claude Switcher]${NC} $1" >&2
 }
 
 print_error() {
-    echo -e "${RED}[Claude Switcher]${NC} $1"
+    echo -e "${RED}[Claude Switcher]${NC} $1" >&2
 }
 
 load_config() {

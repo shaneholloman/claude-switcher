@@ -1,20 +1,19 @@
 # Claude Code Switcher
 
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github&style=for-the-badge)](https://github.com/sponsors/andisearch)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-Support-yellow?logo=buy-me-a-coffee&style=for-the-badge)](https://buymeacoffee.com/andisearch)
 [![GitHub Stars](https://img.shields.io/github/stars/andisearch/claude-switcher?style=for-the-badge&logo=github)](https://github.com/andisearch/claude-switcher/stargazers)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-Support-yellow?logo=buy-me-a-coffee&style=for-the-badge)](https://buymeacoffee.com/andisearch)
 
-Use Claude via shebang support in executable markdown files. Switch between Claude Code providers (Pro/Max, Anthropic API, AWS, Google Cloud, Azure, Vercel) with a single command. Hit rate limits? Continue on your API keys without `/logout`. Need Opus without Max? Use any provider.
+Automate scripts with Claude Code. Use shebang support for executable markdown files, pipe data through AI scripts in standard Unix pipelines, and switch between providers (Pro/Max, Anthropic API, AWS, Google Cloud, Azure, Vercel) without logging out.
 
-**Key features:**
-- Provider switching: `claude-run --aws --opus` or `claude-run --vertex --resume`
-- Executable markdown: `#!/usr/bin/env claude-run` shebang for AI-powered scripts ([thanks to Pete Kooman](https://x.com/koomen/status/2007894999506235409?s=20))
-- Run any script with `claude-run <script>.md`
-- Non-destructive: Plain `claude` always works normally—switcher only affects its own sessions
+**What it does:**
+- Script automation with `#!/usr/bin/env claude-run` shebang for executable markdown files
+- Unix pipe support: pipe data into scripts, redirect output, chain in pipelines
+- Provider switching (optional): `claude-run --aws`, `claude-run --vertex`, etc. Use specific provider API keys in scripts or when you hit rate limits, or for billing management / isolation
+- Model selection: `--opus`, `--haiku`, `--sonnet` and full Claude Code flag support
+- Session continuity: `--resume` picks up your last conversation on any provider
+- Non-destructive: plain `claude` always works as before (switcher is session-scoped)
 
-From [Andi AI](https://andisearch.com). 
-
-[Star this repo ⭐](https://github.com/andisearch/claude-switcher) if it helps!
+From [Andi Search](https://andisearch.com). [Star this repo ⭐](https://github.com/andisearch/claude-switcher) if it helps!
 
 ## Quick Start
 
@@ -44,12 +43,12 @@ Or run any markdown file directly:
 claude-run task.md
 ```
 
-**Minimal alternative**: If you just want basic executable markdown without installing this repo, add a `claude-runner` script to your PATH ([credit: apf6](https://www.reddit.com/user/apf6/)):
+**Minimal alternative**: If you just want basic executable markdown without installing this repo, add a `claude-runner` script to your PATH:
 ```bash
 #!/bin/bash
-claude "$(cat "$1")"
+claude -p "$(tail -n +2 "$1")"
 ```
-This lacks support for safe script automation isolated from your Claude subscription usage, including provider switching, model selection, output formats, and session isolation.
+This script strips the shebang line (`tail -n +2`) and runs in print mode (`-p`) for clean output. It does **not** support Unix pipe features (stdin input, pipeline chaining, clean redirected output), provider switching, model selection, output formats, or session isolation — these require the full repo.
 
 ### Optional: Configure Providers
 
@@ -87,7 +86,15 @@ The setup script installs commands to `/usr/local/bin`, creates `~/.claude-switc
 > [!TIP]
 > Setup does NOT modify your Claude configuration. All switcher scripts are **session-scoped**—they only affect their own session and automatically restore your original configuration on exit. Plain `claude` always runs unmodified.
 
-### 2. Uninstallation
+### 2. Updating
+
+```bash
+cd claude-switcher && git pull && ./setup.sh
+```
+
+Your API keys in `~/.claude-switcher/secrets.sh` are preserved.
+
+### 3. Uninstallation
 
 To remove claude-switcher:
 
@@ -96,6 +103,10 @@ To remove claude-switcher:
 ```
 
 Removes all commands from `/usr/local/bin`, prompts before removing configuration (contains API keys), and cleans up apiKeyHelper references while preserving your settings and backups.
+
+### 4. Tests
+
+Run `./test/automation/run_tests.sh` to validate script automation examples. See [test/README.md](test/README.md) for details.
 
 ## Provider Setup
 
@@ -196,14 +207,14 @@ claude
 # "Rate limit exceeded. Try again in 4 hours 23 minutes."
 
 # Immediately continue with AWS (keeps conversation context)
-claude-aws --resume
+claude-run --aws --resume
 
 # Or switch to Haiku for speed/cost, Opus for complex reasoning
-claude-aws --haiku --resume
-claude-aws --opus --resume
+claude-run --aws --haiku --resume
+claude-run --aws --opus --resume
 
 # Or use Vertex AI
-claude-vertex --resume
+claude-run --vertex --resume
 ```
 
 The `--resume` flag picks up your last conversation exactly where you left off. No lost context, no restarting explanations.
@@ -211,10 +222,10 @@ The `--resume` flag picks up your last conversation exactly where you left off. 
 ### Common Workflows
 
 ```bash
-claude-aws --resume          # Hit Pro limit? Continue on AWS credits
-claude-aws --haiku --resume  # Need faster responses? Switch to Haiku
-claude-apikey --opus --resume # Complex reasoning needed? Use Opus
-claude --resume              # Back to Pro when limits reset
+claude-run --aws --resume          # Hit Pro limit? Continue on AWS credits
+claude-run --aws --haiku --resume  # Need faster responses? Switch to Haiku
+claude-run --apikey --opus --resume # Complex reasoning needed? Use Opus
+claude --resume                     # Back to Pro when limits reset
 ```
 
 ### Why This Works
@@ -278,6 +289,11 @@ Return a JSON object with keys "summary" and "recommendations".
 Stream output in real-time as JSON chunks (for live feedback).
 ```
 
+```markdown
+#!/usr/bin/env -S claude-run --permission-mode bypassPermissions
+Run ./test/automation/run_tests.sh and report results.
+```
+
 **Usage:**
 ```bash
 chmod +x task.md
@@ -292,24 +308,66 @@ Command-line flags override any flags specified in the shebang line.
 > Use `#!/usr/bin/env -S` (with `-S`) to pass multiple flags in the shebang line. This works on macOS and modern Linux.
 
 > [!WARNING]
-> **Security**: Executable markdown runs AI-generated code without approval (like `claude -p`). Only run trusted prompts in trusted directories. Never use `--dangerously-skip-permissions` outside sandboxed environments.
+> Security: Executable markdown runs AI-generated code without approval (like `claude -p`). Only run trusted prompts in trusted directories. Never use `--dangerously-skip-permissions` outside sandboxed environments.
+
+> [!NOTE]
+> Full Automation: By default, Claude asks for approval before running commands. Use `--permission-mode bypassPermissions` to skip all permission checks for unattended scripts. Only use in trusted environments.
+
+**Unix pipe support:**
+
+Executable markdown scripts have proper Unix semantics for automation:
+
+- Clean piped output — when you redirect to a file, you get only Claude's response. No banners, no escape codes, no status messages.
+- Stdin support — pipe data directly into scripts.
+- Chainable — connect scripts together in pipelines.
+- Standard streams — stdout is data, stderr is diagnostics (the Unix convention).
+
+```bash
+# Clean output to file
+./analyze.md > results.txt
+
+# Pipe data into scripts  
+cat data.json | ./process.md
+git log --oneline -20 | ./summarize-changes.md
+
+# Chain scripts together
+./generate-report.md | ./format-output.md > final.txt
+
+# Control stdin position (default: prepend)
+cat data.txt | ./analyze.md --stdin-position append
+```
+
+Use in shell scripts:
+
+```bash
+#!/bin/bash
+for f in logs/*.txt; do
+    cat "$f" | ./analyze.md >> summary.txt
+done
+```
+
+Combine traditional tools with AI:
+
+```bash
+git log --oneline -20 | ./explain-changes.md > changelog-summary.txt
+```
 
 ---
 
-### Individual Provider Scripts
+### Legacy Provider Scripts
 
-Direct scripts are available for backward compatibility or workflows that prefer explicit commands:
+Direct scripts are available for backward compatibility:
 
-| Provider | Script | Equivalent |
-|----------|--------|-----------|
-| AWS Bedrock | `claude-aws` | `claude-run --aws` |
-| Google Vertex AI | `claude-vertex` | `claude-run --vertex` |
-| Anthropic API | `claude-apikey` | `claude-run --apikey` |
-| Microsoft Azure | `claude-azure` | `claude-run --azure` |
-| Vercel AI Gateway | `claude-vercel` | `claude-run --vercel` |
-| Claude Pro/Max | `claude-pro` | `claude-run --pro` |
+| Script | Equivalent |
+|--------|-----------|
+| `claude-aws` | `claude-run --aws` |
+| `claude-vertex` | `claude-run --vertex` |
+| `claude-apikey` | `claude-run --apikey` |
+| `claude-azure` | `claude-run --azure` |
+| `claude-vercel` | `claude-run --vercel` |
+| `claude-pro` | `claude-run --pro` |
 
-All scripts support the same flags (`--opus`, `--haiku`, `--resume`, etc.) and handle authentication, environment setup, and session tracking automatically.
+All legacy scripts support the same flags (`--opus`, `--haiku`, `--resume`, etc.).
 
 ### Utilities
 
@@ -441,7 +499,7 @@ cat ~/.claude-switcher/current-mode.sh  # Current provider mode
 2. Or use plain `claude` (always native state)
 3. In Claude, run `/status` to verify authentication
 
-> **Remember**: Wrapper scripts are session-scoped. Each time you want Anthropic API, run `claude-apikey`. After exiting any wrapper, plain `claude` returns to native state.
+> **Remember**: Wrapper scripts are session-scoped. Each time you want Anthropic API, run `claude-run --apikey`. After exiting any wrapper, plain `claude` returns to native state.
 
 ### Session-Scoped Behavior
 
@@ -503,32 +561,20 @@ git tag -a vx.y.z -m "Release vx.y.z: Description"
 git push origin main && git push origin vx.y.z
 ```
 
-## Support This Project
+## Support
 
-Claude Switcher is **free and open source**, built to help developers be more productive and save money with Claude Code.
+Claude Switcher is free and open source.
 
-### ⭐ Star This Repo
-The simplest way to show your support is to **[give us a star on GitHub](https://github.com/andisearch/claude-switcher)**!
-
-[![GitHub Stars](https://img.shields.io/github/stars/andisearch/claude-switcher?style=social)](https://github.com/andisearch/claude-switcher/stargazers)
-
-### 💖 Donate
-Your support helps us maintain this project and build [Andi AI search](https://andisearch.com).
-
-- 🩷 **[GitHub Sponsors](https://github.com/sponsors/andisearch)** - Recurring or one-time
-- ☕ **[Buy Me a Coffee](https://buymeacoffee.com/andisearch)** - Quick one-time
-- 💙 **[PayPal](https://www.paypal.me/lazywebai)** - Direct donation
-
-### 🤝 Other Ways to Help
-- **Share** with colleagues and friends
-- **Contribute** via bug reports, feature requests, or pull requests
-- **Feedback** on how you're using it and how we can improve
+- **[Star on GitHub](https://github.com/andisearch/claude-switcher)** — helps others discover the project
+- **[Buy Me a Coffee](https://buymeacoffee.com/andisearch)** — one-time support
+- **[GitHub Sponsors](https://github.com/sponsors/andisearch)** — supports the broader [Andi AI search](https://andisearch.com) project
+- **Share** with colleagues, report bugs, or submit PRs
 
 ## Acknowledgments
 
-Thanks to [Pete Kooman](https://x.com/koomen/status/2007894999506235409?s=20) from YC for the great idea of executable markdown! Pete's insight was spot-on: executable prompts become reusable tools. Put them in your repo. Run them in CI. Chain them together. Share them with your team. A prompt that lives in a file is a prompt you'll actually use again.
+Thanks to [Pete Koomen](https://x.com/koomen/status/2007894999506235409?s=20) from YC for the great idea of executable markdown! Pete's insight was spot-on: executable prompts become reusable tools. Put them in your repo. Run them in CI. Chain them together. Share them with your team. A prompt that lives in a file is a prompt you'll actually use again.
 
-Thanks to Reddit user ([apf6](https://www.reddit.com/user/apf6/)) for the minimal alternative script suggestion for shebang support for Claude.
+Thanks to Reddit user ([apf6](https://www.reddit.com/user/apf6/)) for the suggestion to add a minimal alternative script like `claude "$(cat "$1")"` for shebang support for Claude.
 
 Thanks to the team at Anthropic for creating the awesome Claude Code, the fantastic Sonnet, Opus and Haiku models, and for their open source tools. We are not associated with Anthropic in any way, other than being big fans of Claude Code.
 

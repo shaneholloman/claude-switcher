@@ -19,3 +19,6 @@ temp/
 
 resources/
 promo/
+
+# Test output
+test/automation/output/

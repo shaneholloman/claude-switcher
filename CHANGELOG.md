@@ -5,6 +5,30 @@ All notable changes to claude-switcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-07
+
+### Added
+- **Stdin Piping Support**: Pipe data into executable markdown scripts for Unix-style workflows
+  - `echo '{"data": 1}' | ./analyze.md` - stdin content is prepended to prompt by default
+  - `cat data.txt | ./process.md --stdin-position append` - optionally append instead
+  - Enables chaining scripts: `./generate.md | ./format.md > output.txt`
+- **`--stdin-position` Flag**: Control where piped input appears in the prompt
+  - `prepend` (default): stdin content comes before the markdown file content
+  - `append`: stdin content comes after the markdown file content
+- **Automation Test Suite**: Validates all README script examples (`./test/automation/run_tests.sh`)
+  - Tests shebang execution, stdin piping, pipeline chaining, shell integration
+  - Also available as executable markdown: `./test/automation/run_tests.md`
+- **Full Automation Mode**: Document `--permission-mode bypassPermissions` for unattended scripts
+  - Enables AI scripts to run commands without interactive approval
+  - Use in CI/CD pipelines and trusted automation environments
+
+### Fixed
+- **Pipe Output Pollution**: Console output (banners, `[Claude Switcher]` messages) no longer pollutes stdout when piping to files
+  - Added `is_interactive()` TTY detection to suppress banners in non-interactive mode
+  - All status messages now route to stderr instead of stdout
+  - `./script.md > result.txt` now produces clean output without escape codes
+- Banner and print functions redirected to stderr for proper Unix semantics
+
 ## [1.2.0] - 2026-01-04
 
 ### Added
