@@ -59,7 +59,7 @@ This script strips the shebang line (`tail -n +2`) and runs in print mode (`-p`)
 
 ### Optional: Configure Providers
 
-To switch between providers (AWS, Vertex, etc.) or use API keys:
+Switch between provider API keys on-the-fly, when you hit rate limits, or for billing management / isolation. Run automated scripts against cloud billing instead of your personal Claude subscription.
 
 ```bash
 # Edit secrets file
@@ -75,6 +75,12 @@ Then use provider flags:
 claude-run --aws task.md          # Run via AWS Bedrock
 claude-run --aws --opus           # Interactive with Opus 4.5
 claude-run --vertex --resume      # Resume via Vertex AI
+```
+
+Or in an executable markdown file:
+```markdown
+#!/usr/bin/env claude-run --opus --vercel
+Analyze my codebase and summarize the architecture.
 ```
 
 See [Provider Setup](#provider-setup) for all providers and [Usage](#usage) for full options.
