@@ -1,8 +1,8 @@
-# AI Runner
+# Andi AIRun
 
-Universal prompt interpreter for AI coding agents.
+Universal AI runner and interpreter for AI scripts.
 
-Execute markdown prompts as shell scripts. Switch between your subscriptions/providers and API keys on the fly. Currently extends [Claude Code](https://claude.ai/code) with multi-provider support.
+Write prompts in markdown, and run them like programs using a universal prompt interpreter. Pipe data, chain with Unix tools, and specify models/providers in scripts. Switch models and providers at will. Extends [Claude Code](https://claude.ai/code) with multi-provider support.
 
 [![GitHub Stars](https://img.shields.io/github/stars/andisearch/airun?style=for-the-badge&logo=github)](https://github.com/andisearch/airun/stargazers)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-Support-yellow?logo=buy-me-a-coffee&style=for-the-badge)](https://buymeacoffee.com/andisearch)
@@ -30,7 +30,7 @@ From [Andi AI Search](https://andisearch.com). [Star this repo](https://github.c
 # Install Claude Code (if not already installed)
 curl -fsSL https://claude.ai/install.sh | bash
 
-# Install AI Runner
+# Install Andi AIRun
 git clone https://github.com/andisearch/airun.git
 cd airun && ./setup.sh
 ```
@@ -501,10 +501,10 @@ This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.
 
 ## Name History
 
-This project was originally named **claude-switcher** and has been renamed to **AI Runner** (repo: `airun`).
+This project was originally named **claude-switcher** and has been renamed to **Andi AIRun** (repo: `airun`).
 
 - **2025**: Started as "Claude Switcher" - a tool to switch between Claude Code providers
-- **2026**: Renamed to "AI Runner" - reflecting expanded scope (executable markdown, multi-tool support)
+- **2026**: Renamed to "Andi AIRun" - reflecting expanded scope (universal AI runner and interpreter for AI scripts)
 
 If you found this project searching for "claude-switcher", you're in the right place!
 
@@ -515,7 +515,7 @@ Legacy configuration (`~/.claude-switcher/`) is still supported for backward com
 
 ## Support
 
-AI Runner is free and open source.
+Andi AIRun is free and open source.
 
 - **[Star on GitHub](https://github.com/andisearch/airun)** - helps others discover the project
 - **[Buy Me a Coffee](https://buymeacoffee.com/andisearch)** - one-time support
@@ -533,7 +533,7 @@ Thanks to the Startups teams at Microsoft Azure, AWS and Google Cloud for their 
 
 ## Authors
 
-**AI Runner** is created and maintained by:
+**Andi AIRun** is created and maintained by:
 - **Jed White**, CTO of [Andi](https://andisearch.com)
 - **Angela Hoover**, CEO of [Andi](https://andisearch.com)
 
