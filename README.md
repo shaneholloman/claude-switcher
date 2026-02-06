@@ -1,14 +1,12 @@
 # Andi AIRun
 
-Universal AI Runner: an interpreter for AI scripts using Claude Code.
+Run AI prompts like programs. Executable markdown with shebang, Unix pipes, and output redirection.
 
-Write prompts in markdown, and run them like programs using a universal prompt interpreter. Pipe data, chain with Unix tools, and switch models and cloud providers on the command line or in scripts.
+`cat data.json | ./analyze.md > results.txt`
 
-`ai --vercel --haiku script.md`
+`ai --aws --opus script.md`
 
-`cat data.json | ./script.md > results.txt`
-
-Extends [Claude Code](https://claude.ai/code) with on-the-fly multi-cloud support. Supports local models via Ollama and LM Studio for free, no-API-key access. Use any model with Claude Code -- including OpenAI, xAI, Google, and more -- via [Vercel AI Gateway](https://vercel.com/ai-gateway).
+Extends [Claude Code](https://claude.ai/code) with on-the-fly cross-cloud provider and subscription switching. Use Claude on AWS Bedrock, Google Vertex, Azure, and the Vercel AI Gateway as well as the Anthropic API. Switch between them mid-conversation. Also supports local models (Ollama, LM Studio) and 100+ alternate cloud models via [Vercel AI Gateway](https://vercel.com/ai-gateway).
 
 [![GitHub Stars](https://img.shields.io/github/stars/andisearch/airun?style=for-the-badge&logo=github)](https://github.com/andisearch/airun/stargazers)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-Support-yellow?logo=buy-me-a-coffee&style=for-the-badge)](https://buymeacoffee.com/andisearch)
@@ -16,22 +14,14 @@ Extends [Claude Code](https://claude.ai/code) with on-the-fly multi-cloud suppor
 **What it does:**
 - Executable markdown with `#!/usr/bin/env ai` shebang for script automation
 - Unix pipe support: pipe data into scripts, redirect output, chain in pipelines
-- Provider switching: bypass rate limits with Anthropic API, Ollama / LM Studio (local and free), AWS, Vertex, Azure, Vercel (any model: OpenAI, xAI, Google, more)
+- Cross-cloud provider switching: use Claude on AWS, Vertex, Azure, Anthropic API + switch mid-conversation to bypass rate limits. Also supports local models and Vercel AI Gateway
 - Model tiers: `--opus`/`--high`, `--sonnet`/`--mid`, `--haiku`/`--low`
 - Session continuity: `--resume` picks up your previous chats with any model/provider
 - Non-destructive: plain `claude` always works untouched as before
 
 From [Andi AI Search](https://andisearch.com). [Star this repo](https://github.com/andisearch/airun) if it helps!
 
-## What's New
-
-| Date | Update |
-|------|--------|
-| Feb 2025 | Opus 4.6 models, persistent defaults (`--set-default`) |
-| Jan 2025 | LM Studio local support (`--lmstudio`) |
-| Jan 2025 | Ollama local support (`--ollama`) — free, no API key needed |
-| Jan 2025 | Piped script execution (`curl url \| ai`) |
-| Jan 2025 | Executable markdown with shebang (`#!/usr/bin/env ai`) |
+**Latest:** Opus 4.6 models, local models with Ollama and LM Studio, persistent defaults (`--set-default`), Vercel AI Gateway with 100+ models. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Quick Start
 
@@ -51,7 +41,7 @@ git clone https://github.com/andisearch/airun.git
 cd airun && ./setup.sh
 ```
 
-**That's it!** You can now run any markdown file as an AI script:
+You can now run any markdown file as an AI script:
 
 ```bash
 # Create an executable prompt
@@ -87,6 +77,7 @@ echo "Explain what a Makefile does" | ai         # Simple prompt
 #!/bin/bash
 claude -p "$(tail -n +2 "$1")"
 ```
+
 This works for simple prompts but lacks provider switching, model selection, stdin piping, output formats, and session isolation. ([credit: apf6](https://www.reddit.com/r/ClaudeAI/comments/1q44kkd/comment/nxpyfui/))
 
 ## Commands
@@ -97,7 +88,7 @@ This works for simple prompts but lacks provider switching, model selection, std
 | `ai-sessions` | View active AI coding sessions |
 | `ai-status` | Show current configuration and provider status |
 
-Running `ai` with no flags is equivalent to running `claude` with your regular subscription settings, but session-scoped — your environment is automatically restored on exit. Add provider flags to switch, or use `ai --aws --opus --set-default` to save your preferred provider and model for future runs.
+Running `ai` with no flags is equivalent to running `claude` with your regular subscription settings, but session-scoped. Your environment is automatically restored on exit. Add provider flags to switch, or use `ai --aws --opus --set-default` to save your preferred provider and model for future runs.
 
 ### Usage Examples
 
@@ -256,7 +247,7 @@ ai --apikey task.md            # Anthropic API direct
 
 #### Local Providers (Free, No API Keys)
 
-> **Hardware note:** Running local models requires significant RAM/VRAM — capable coding models need 24GB+ VRAM (or unified memory on Apple Silicon). Ollama's cloud models are a great alternative if your hardware is limited.
+> **Hardware note:** Coding models need 24GB+ VRAM (or unified memory on Apple Silicon). Ollama's cloud models work on any hardware.
 
 **Ollama** — runs models locally or on Ollama's cloud:
 
@@ -289,7 +280,7 @@ See **[docs/PROVIDERS.md](docs/PROVIDERS.md)** for model recommendations, config
 
 #### Cloud Providers
 
-Add your credentials to `~/.ai-runner/secrets.sh` (created by `./setup.sh`). AI Runner loads this file automatically — no need to set environment variables in your shell profile.
+Add your credentials to `~/.ai-runner/secrets.sh` (created by `./setup.sh`). Andi AIRun loads this file automatically, so you don't need to set environment variables in your shell profile.
 
 ```bash
 nano ~/.ai-runner/secrets.sh
@@ -317,21 +308,6 @@ export ANTHROPIC_FOUNDRY_RESOURCE="your-resource-name"
 ```
 
 You only need to configure the providers you want to use. See **[docs/PROVIDERS.md](docs/PROVIDERS.md)** for all authentication options and detailed setup instructions.
-
-#### Use Any Model via Vercel AI Gateway
-
-Vercel AI Gateway supports 100+ models from OpenAI, xAI, Google, Meta, Mistral, DeepSeek, and more — all through one API. Use `--vercel --model provider/model` to run Claude Code's harness with any supported model:
-
-```bash
-ai --vercel --model openai/gpt-5.2-codex         # OpenAI coding model
-ai --vercel --model xai/grok-code-fast-1          # xAI coding model
-```
-
-When you specify a non-Anthropic model, both the main and background models are set to it automatically (avoiding provider mixing). See **[docs/PROVIDERS.md](docs/PROVIDERS.md)** for the full list of supported models and configuration options.
-
-## Tools
-
-- **Claude Code** (`--tool cc`) - Anthropic's official coding CLI (default)
 
 ## Switching Providers to Avoid Rate Limits
 
@@ -478,7 +454,7 @@ ai-status                              # Shows authentication and configuration
 
 ### Session-Scoped Behavior
 
-`ai` with no flags uses your regular Claude subscription — identical to running `claude` directly. Provider flags (`--aws`, `--ollama`, etc.) only affect the current session:
+`ai` with no flags uses your regular Claude subscription, identical to running `claude` directly. Provider flags (`--aws`, `--ollama`, etc.) only affect the current session:
 - On exit, your original Claude settings are automatically restored
 - Plain `claude` in another terminal is completely unaffected
 - No global configuration is changed
@@ -491,17 +467,7 @@ This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.
 
 ## Name History
 
-This project was originally named **claude-switcher** and has been renamed to **Andi AIRun** (repo: `airun`).
-
-- **2025**: Started as "Claude Switcher" - a tool to switch between Claude Code providers
-- **2026**: Renamed to "Andi AIRun" - reflecting expanded scope (universal AI runner and interpreter for AI scripts)
-
-If you found this project searching for "claude-switcher", you're in the right place!
-
-Previous URLs automatically redirect:
-- `github.com/andisearch/claude-switcher` → `github.com/andisearch/airun`
-
-Legacy configuration (`~/.claude-switcher/`) is still supported for backward compatibility.
+Originally named **claude-switcher**, renamed to **Andi AIRun** in 2026. Previous URLs (`github.com/andisearch/claude-switcher`) redirect here automatically. Legacy configuration (`~/.claude-switcher/`) is still supported.
 
 ## Support
 
