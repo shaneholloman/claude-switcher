@@ -12,6 +12,10 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Andi AIRun — Run AI prompts like programs">
 <meta name="twitter:description" content="Executable markdown with shebang, Unix pipes, and output redirection.">
+<link rel="icon" type="image/jpeg" href="logo.jpg">
+<link rel="apple-touch-icon" href="logo.jpg">
+<meta property="og:image" content="https://airun.me/logo.jpg">
+<meta name="twitter:image" content="https://airun.me/logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -77,8 +81,12 @@ nav{
   padding:14px 0;
 }
 nav .container{display:flex;align-items:center;justify-content:space-between}
-.nav-brand{font-family:var(--display);font-weight:700;font-size:18px;color:var(--green);letter-spacing:-0.5px}
-.nav-brand span{color:var(--text-dim);font-weight:400}
+.nav-brand{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:700;font-size:18px;color:var(--green);letter-spacing:-0.5px}
+.nav-prompt{color:var(--cyan);margin-right:1px}
+.nav-prompt .underscore{animation:blink 1.2s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.nav-brand-text{color:var(--green)}
+.nav-brand-text span{color:var(--text-dim);font-weight:400}
 .nav-links{display:flex;gap:24px;align-items:center}
 .nav-links a{color:var(--text-dim);font-size:13px;letter-spacing:0.5px;text-transform:uppercase}
 .nav-links a:hover{color:var(--green)}
@@ -373,7 +381,7 @@ footer a:hover{color:var(--green)}
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="/" class="nav-brand">airun<span>.me</span></a>
+    <a href="/" class="nav-brand"><span class="nav-prompt">&gt;<span class="underscore">_</span></span><span class="nav-brand-text">airun<span>.me</span></span></a>
     <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#providers">Providers</a>
@@ -661,6 +669,7 @@ footer a:hover{color:var(--green)}
       <a href="https://andisearch.com" target="_blank" rel="noopener">Andi AI Search</a>
     </div>
     <p>From <a href="https://andiai.com" target="_blank" rel="noopener">Andi AI</a> — MIT License</p>
+    <p style="margin-top:6px">Executable markdown inspired by <a href="https://x.com/koomen" target="_blank" rel="noopener" style="color:var(--green)">Pete Koomen</a></p>
   </div>
 </footer>
 
