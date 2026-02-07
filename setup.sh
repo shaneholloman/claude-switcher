@@ -27,6 +27,12 @@ SHARE_DIR_LEGACY="/usr/local/share/claude-switcher"
 if [ ! -w "$INSTALL_DIR" ]; then
     echo -e "${YELLOW}Note: $INSTALL_DIR is not writable by current user. Sudo access required.${NC}"
     SUDO="sudo"
+    # Validate sudo upfront so we fail fast instead of prompting repeatedly
+    if ! sudo -v 2>/dev/null; then
+        echo -e "${RED}Error: Could not obtain sudo access. Setup requires write access to $INSTALL_DIR${NC}"
+        echo -e "${YELLOW}Either run with sudo or ensure $INSTALL_DIR is writable.${NC}"
+        exit 1
+    fi
 else
     SUDO=""
 fi

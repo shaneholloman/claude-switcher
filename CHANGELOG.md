@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Disable with `export AI_NO_UPDATE_CHECK=1`
 - **Tests 17-22**: Update checker module, subcommand parsing, version comparison, cache cycle, `AI_NO_UPDATE_CHECK`, source metadata format, heredoc sync
 
+### Fixed
+- **Setup sudo loop**: `setup.sh` now validates sudo credentials upfront with `sudo -v`, exiting immediately with a clear error if authentication fails instead of repeatedly prompting for every file copy
+
 ## [2.2.2] - 2026-02-05
 
 ### Added
