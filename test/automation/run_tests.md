@@ -1,4 +1,4 @@
-#!/usr/bin/env -S claude-run --permission-mode bypassPermissions
+#!/usr/bin/env -S ai --permission-mode bypassPermissions
 
 Run this command and report the test results:
 

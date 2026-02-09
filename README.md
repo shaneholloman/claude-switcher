@@ -170,9 +170,15 @@ Use AWS Bedrock to analyze this code.
 Review this PR for security issues. Stream output in real-time.
 ```
 
+**Scripts that write files or run commands** need a permission mode:
 ```markdown
 #!/usr/bin/env -S ai --permission-mode bypassPermissions
 Run ./test/automation/run_tests.sh and report results.
+```
+
+```markdown
+#!/usr/bin/env -S ai --allowedTools 'Bash(npm test)' 'Read'
+Run the test suite and report results. Do not modify any files.
 ```
 
 **Usage:**
@@ -183,9 +189,11 @@ ai --vercel task.md                # Override: use Vercel instead
 ai --opus task.md                  # Override: use Opus instead
 ```
 
-> **Tip:** Use `#!/usr/bin/env -S` (with `-S`) to pass multiple flags in the shebang line.
+> **Tip:** Use `#!/usr/bin/env -S` (with `-S`) to pass flags in the shebang line. Standard `env` only accepts one argument, so `#!/usr/bin/env ai --aws` won't work — you need `-S` to split the string.
 
-> **Warning:** Executable markdown runs AI-generated code without approval (like `claude -p`). Only run trusted prompts in trusted directories.
+> **Warning:** Executable markdown with `--permission-mode bypassPermissions` gives the AI full system access. Only run trusted scripts in trusted directories. Use `--allowedTools` for granular control. See **[docs/SCRIPTING.md](docs/SCRIPTING.md)** for details.
+
+See **[docs/SCRIPTING.md](docs/SCRIPTING.md)** for the full scripting & automation guide — permission modes, Claude Code flag pass-through, CI/CD patterns, and security best practices.
 
 ### Unix Pipe Support
 

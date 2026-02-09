@@ -1,2 +1,2 @@
-#!/usr/bin/env claude-run
+#!/usr/bin/env ai
 Analyze my codebase and summarize the architecture.
