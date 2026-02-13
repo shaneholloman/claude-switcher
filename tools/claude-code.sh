@@ -46,7 +46,7 @@ tool_execute_prompt() {
         if [[ ! -t 1 && -t 2 ]]; then
             # stdout redirected (file or pipe) — narration to stderr, clean content to stdout
             # Strategy: intermediate turns → stderr in real-time
-            #           last turn → split at first markdown heading:
+            #           last turn → split at first content marker (frontmatter --- or heading #):
             #             preamble → stderr, content → stdout (file)
             local _sys_prompt="Output is being captured. Begin your final response directly with the requested content. Do not include introductory text or preamble."
             # local assignment masks non-zero exit (safe under set -e)
@@ -60,14 +60,15 @@ tool_execute_prompt() {
                     fi
                     _prev="$_event"
                 done
-                # Last turn — split at first markdown heading
+                # Last turn — split at first content marker (frontmatter --- or heading #)
                 if [[ -n "$_prev" ]]; then
                     _text=$(printf '%s\n' "$_prev" | jq -r '.message.content[] | select(.type == "text") | .text' 2>/dev/null)
-                    if printf '%s\n' "$_text" | grep -qm1 '^#'; then
-                        printf '%s\n' "$_text" | sed '/^#/,$d' >&2   # preamble → stderr
-                        printf '%s\n' "$_text" | sed -n '/^#/,$p'    # content → stdout
+                    _split_pat='^(---|#)'
+                    if printf '%s\n' "$_text" | grep -qEm1 "$_split_pat"; then
+                        printf '%s\n' "$_text" | sed -E '/^(---|#)/,$d' >&2   # preamble → stderr
+                        printf '%s\n' "$_text" | sed -En '/^(---|#)/,$p'      # content → stdout
                     else
-                        printf '%s\n' "$_text"                        # no heading → stdout
+                        printf '%s\n' "$_text"                                  # no marker → stdout
                     fi
                 fi
             })

@@ -144,9 +144,9 @@ Here's my report:
 
 How it works:
 - Intermediate turns (narration, progress) stream to stderr in real-time
-- The last turn is split at the first markdown heading (`#`)
-- Preamble text before the heading goes to stderr
-- Content from the heading onward goes to the file
+- The last turn is split at the first content marker (YAML frontmatter `---` or heading `#`)
+- Preamble text before the marker goes to stderr
+- Content from the marker onward goes to the file
 - A "Done (N lines written)" summary appears on stderr when complete
 
 ### Browser automation with Chrome

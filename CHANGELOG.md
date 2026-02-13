@@ -5,6 +5,11 @@ All notable changes to AI Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.5] - 2026-02-13
+
+### Fixed
+- **`--live` YAML frontmatter support**: Split pattern now recognizes `---` (frontmatter) in addition to `#` (heading) as a content marker, so scripts generating YAML frontmatter output correctly send it to stdout when redirected to a file
+
 ## [2.3.4] - 2026-02-12
 
 ### Fixed
