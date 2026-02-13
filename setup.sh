@@ -331,6 +331,16 @@ source "$AI_RUNNER_SHARE_DIR/lib/core-utils.sh"
 source "$AI_RUNNER_SHARE_DIR/lib/provider-loader.sh"
 source "$AI_RUNNER_SHARE_DIR/lib/tool-loader.sh"
 
+# --- Process isolation for nested/composable scripts ---
+# When ai scripts call other ai scripts, children inherit the parent's
+# exported env vars. Clear AI Runner-controlled vars so each invocation
+# starts fresh, like a new bash shell.
+unset ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL
+unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN
+unset CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+unset AI_LIVE_OUTPUT AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+unset CLAUDECODE
+
 # Parse shebang flags into SHEBANG_* variables
 _parse_shebang_flags() {
     local line="$1"

@@ -5,6 +5,11 @@ All notable changes to AI Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.6] - 2026-02-13
+
+### Fixed
+- **Nested `claude -p` calls**: Clear `CLAUDECODE` env var in process isolation block, allowing child `ai` scripts to call `claude -p` (prompt mode) from within a parent `--cc` session. Previously, Claude Code refused to run nested sessions even in non-interactive prompt mode.
+
 ## [2.3.5] - 2026-02-13
 
 ### Fixed

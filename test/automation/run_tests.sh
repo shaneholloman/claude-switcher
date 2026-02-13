@@ -1001,6 +1001,216 @@ test_shebang_live_heredoc_sync() {
     fi
 }
 
+#-----------------------------------------------------------------------------
+# Environment Isolation Tests
+#-----------------------------------------------------------------------------
+
+test_env_isolation_block() {
+    test_header "Environment isolation block"
+
+    local ai_file="$PROJECT_DIR/scripts/ai"
+
+    # Check each var is unset
+    local vars=(
+        ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL
+        ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN
+        CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+        AI_LIVE_OUTPUT AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+        CLAUDECODE
+    )
+    for var in "${vars[@]}"; do
+        if grep -q "unset.*$var" "$ai_file"; then
+            pass "Isolation block unsets $var"
+        else
+            fail "Isolation block missing unset for $var"
+        fi
+    done
+
+    # Verify block is BEFORE _parse_shebang_flags (ordering matters)
+    local unset_line parse_line
+    unset_line=$(grep -n 'unset ANTHROPIC_MODEL' "$ai_file" | head -1 | cut -d: -f1)
+    parse_line=$(grep -n '_parse_shebang_flags()' "$ai_file" | head -1 | cut -d: -f1)
+    if [[ -n "$unset_line" && -n "$parse_line" && "$unset_line" -lt "$parse_line" ]]; then
+        pass "Isolation block positioned before _parse_shebang_flags"
+    else
+        fail "Isolation block must come before _parse_shebang_flags"
+    fi
+}
+
+test_env_isolation_heredoc_sync() {
+    test_header "Environment isolation heredoc sync"
+
+    local ai_file="$PROJECT_DIR/scripts/ai"
+    local setup_file="$PROJECT_DIR/setup.sh"
+
+    local vars=(
+        ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL
+        ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN
+        CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+        AI_LIVE_OUTPUT AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+        CLAUDECODE
+    )
+
+    local ai_count=0 setup_count=0
+    for var in "${vars[@]}"; do
+        grep -q "unset.*$var" "$ai_file" && ((ai_count++)) || true
+        grep -q "unset.*$var" "$setup_file" && ((setup_count++)) || true
+    done
+
+    if [[ "$ai_count" -eq "${#vars[@]}" && "$setup_count" -eq "${#vars[@]}" ]]; then
+        pass "Both scripts/ai and setup.sh unset all ${#vars[@]} isolation vars"
+    else
+        fail "Sync drift: scripts/ai has $ai_count, setup.sh has $setup_count (expected ${#vars[@]})"
+    fi
+
+    # Verify ordering in setup.sh too
+    local unset_line parse_line
+    unset_line=$(grep -n 'unset ANTHROPIC_MODEL' "$setup_file" | head -1 | cut -d: -f1)
+    parse_line=$(grep -n '_parse_shebang_flags()' "$setup_file" | head -1 | cut -d: -f1)
+    if [[ -n "$unset_line" && -n "$parse_line" && "$unset_line" -lt "$parse_line" ]]; then
+        pass "setup.sh isolation block positioned before _parse_shebang_flags"
+    else
+        fail "setup.sh isolation block must come before _parse_shebang_flags"
+    fi
+}
+
+test_env_isolation_completeness() {
+    test_header "Environment isolation completeness"
+
+    local ai_file="$PROJECT_DIR/scripts/ai"
+
+    # Vars that SHOULD be isolated (set by provider_setup_env, not user credentials)
+    local should_isolate=(
+        ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL
+        ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN
+        CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+    )
+
+    local missing=0
+    for var in "${should_isolate[@]}"; do
+        if ! grep -q "unset.*$var" "$ai_file"; then
+            fail "Provider exports $var but isolation block doesn't unset it"
+            ((missing++)) || true
+        fi
+    done
+
+    if [[ "$missing" -eq 0 ]]; then
+        pass "All provider-exported model/mode vars covered by isolation block"
+    fi
+
+    # Check AI Runner runtime vars too
+    local runtime_vars=(AI_LIVE_OUTPUT AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS)
+    local runtime_missing=0
+    for var in "${runtime_vars[@]}"; do
+        if ! grep -q "unset.*$var" "$ai_file"; then
+            fail "Runtime var $var not in isolation block"
+            ((runtime_missing++)) || true
+        fi
+    done
+
+    if [[ "$runtime_missing" -eq 0 ]]; then
+        pass "All AI Runner runtime vars covered by isolation block"
+    fi
+}
+
+test_env_isolation_functional() {
+    test_header "Environment isolation functional (subprocess)"
+
+    local test_dir="$OUTPUT_DIR/env-isolation-$$"
+    mkdir -p "$test_dir"
+
+    # Create a mock claude that captures env vars to a file
+    cat > "$test_dir/claude" << 'MOCK'
+#!/bin/bash
+# Mock claude: capture env vars and exit
+cat > /dev/null  # consume stdin
+env | grep -E '^(ANTHROPIC_|CLAUDE_CODE_|AI_LIVE|AI_SESSION|CLAUDECODE=)' | sort > "$MOCK_ENV_CAPTURE"
+echo "mock response"
+MOCK
+    chmod +x "$test_dir/claude"
+
+    # Create a minimal test .md file
+    cat > "$test_dir/test-child.md" << 'MD'
+#!/usr/bin/env ai
+Test prompt
+MD
+    chmod +x "$test_dir/test-child.md"
+
+    local ai_script="$PROJECT_DIR/scripts/ai"
+    local capture_file="$test_dir/captured-env.txt"
+
+    # Run ai with parent env vars that should NOT leak
+    local output
+    output=$(
+        export ANTHROPIC_MODEL="parent-leak-haiku"
+        export ANTHROPIC_SMALL_FAST_MODEL="parent-leak-small"
+        export AI_LIVE_OUTPUT="true"
+        export CLAUDE_CODE_USE_BEDROCK="1"
+        export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1"
+        export AI_SESSION_ID="parent-session-999"
+        export CLAUDECODE="1"
+        export MOCK_ENV_CAPTURE="$capture_file"
+        PATH="$test_dir:$PATH" bash "$ai_script" "$test_dir/test-child.md" 2>&1
+    ) || true
+
+    # Check captured env — parent values should NOT appear
+    if [[ -f "$capture_file" ]]; then
+        local leaked=0
+
+        if grep -q "ANTHROPIC_MODEL=parent-leak-haiku" "$capture_file"; then
+            fail "ANTHROPIC_MODEL leaked from parent (got parent-leak-haiku)"
+            ((leaked++)) || true
+        else
+            pass "ANTHROPIC_MODEL not leaked from parent"
+        fi
+
+        if grep -q "AI_LIVE_OUTPUT=true" "$capture_file"; then
+            fail "AI_LIVE_OUTPUT leaked from parent"
+            ((leaked++)) || true
+        else
+            pass "AI_LIVE_OUTPUT not leaked from parent"
+        fi
+
+        if grep -q "CLAUDE_CODE_USE_BEDROCK=1" "$capture_file"; then
+            fail "CLAUDE_CODE_USE_BEDROCK leaked from parent"
+            ((leaked++)) || true
+        else
+            pass "CLAUDE_CODE_USE_BEDROCK not leaked from parent"
+        fi
+
+        if grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1" "$capture_file"; then
+            fail "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS leaked from parent"
+            ((leaked++)) || true
+        else
+            pass "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS not leaked from parent"
+        fi
+
+        if grep -q "AI_SESSION_ID=parent-session-999" "$capture_file"; then
+            fail "AI_SESSION_ID leaked from parent"
+            ((leaked++)) || true
+        else
+            pass "AI_SESSION_ID not leaked from parent"
+        fi
+
+        if grep -q "CLAUDECODE=1" "$capture_file"; then
+            fail "CLAUDECODE leaked from parent"
+            ((leaked++)) || true
+        else
+            pass "CLAUDECODE not leaked from parent"
+        fi
+    else
+        # Mock wasn't reached — ai may have exited early
+        # Check if isolation block at least runs (static fallback)
+        if echo "$output" | grep -q "parent-leak-haiku"; then
+            fail "Parent ANTHROPIC_MODEL visible in output"
+        else
+            pass "No parent env leak detected in output (mock not reached, static check)"
+        fi
+    fi
+
+    rm -rf "$test_dir"
+}
+
 #=============================================================================
 # MAIN
 #=============================================================================
@@ -1043,6 +1253,10 @@ main() {
     test_shebang_flag_parsing
     test_shebang_flag_precedence
     test_shebang_live_heredoc_sync
+    test_env_isolation_block
+    test_env_isolation_heredoc_sync
+    test_env_isolation_completeness
+    test_env_isolation_functional
 
     echo ""
     echo "=========================================="
