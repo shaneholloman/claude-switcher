@@ -238,3 +238,49 @@ For most automation scripts, either works. When in doubt, use `--bypass`.
 | Run commands and write files | `#!/usr/bin/env -S ai --skip` |
 | Restrict to specific tools | `#!/usr/bin/env -S ai --allowedTools 'Bash(npm test)' 'Read'` |
 | Full automation with provider | `#!/usr/bin/env -S ai --aws --opus --skip` |
+
+## Composable Scripts
+
+### `--cc` and Tool Selection
+
+`--cc` is shorthand for `--tool cc`, which selects Claude Code as the backend tool. Claude Code is currently the only supported tool, so `--cc` does nothing extra on its own. It will matter when other tools (Codex, OpenCode) are added.
+
+In script mode, `--cc` alone does not grant tool access — you need `--skip` or `--bypass` for that.
+
+### The Dispatcher Pattern
+
+Use `--cc --skip` to give the AI access to tools (shell commands, file operations) during script execution. The AI can run commands, write files, and take real actions:
+
+```markdown
+#!/usr/bin/env -S ai --cc --skip --live
+Analyze the codebase, run the test suite, and fix any failures.
+Print a summary after each step.
+```
+
+**Tradeoff:** When the AI runs shell commands via Claude Code, subprocess output is captured by Claude Code and not streamed to your terminal. Use `--live` so the AI narrates progress between tool calls — this gives you visibility into what's happening.
+
+### Composable Chaining
+
+Chain scripts together like Unix programs. Each script in the pipeline runs independently:
+
+```bash
+./parse.md | ./generate.md | ./review.md > final.txt
+```
+
+**Important:** Never use `--cc` in child scripts within a pipeline. Child scripts should be simple prompt mode (`ai` without `--cc`). Only the top-level dispatcher should have tool access.
+
+### Long-Running Scripts
+
+AI scripts can run for minutes (browser automation, multi-step pipelines). Always add `--live` to shebangs for scripts that take more than 30 seconds:
+
+```markdown
+#!/usr/bin/env -S ai --skip --chrome --live
+Navigate to the app, run the full test suite, and report results.
+Narrate each step as you go.
+```
+
+The `--live` flag shows a heartbeat while waiting for the first response, then streams the AI's narration in real-time. Override with `--quiet` for CI/CD where you only want clean stdout:
+
+```bash
+ai --quiet ./browser-test.md > report.md    # Clean output only
+```

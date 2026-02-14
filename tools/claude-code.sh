@@ -43,17 +43,28 @@ tool_execute_prompt() {
     shift
     local args=("$@")
     if [[ "$AI_LIVE_OUTPUT" == true ]]; then
+        # Signal file for heartbeat coordination (bash 3.2 compatible)
+        local _hb_signal
+        _hb_signal=$(mktemp) || _hb_signal="/tmp/.ai-hb-$$"
+
         if [[ ! -t 1 && -t 2 ]]; then
             # stdout redirected (file or pipe) — narration to stderr, clean content to stdout
             # Strategy: intermediate turns → stderr in real-time
             #           last turn → split at first content marker (frontmatter --- or heading #):
             #             preamble → stderr, content → stdout (file)
             local _sys_prompt="Output is being captured. Begin your final response directly with the requested content. Do not include introductory text or preamble."
+
+            _start_heartbeat "$_hb_signal" &
+            local _hb_pid=$!
+            disown "$_hb_pid" 2>/dev/null
+
             # local assignment masks non-zero exit (safe under set -e)
             local _output=$(echo "$prompt" | claude -p --append-system-prompt "$_sys_prompt" "${args[@]}" | \
                 jq --unbuffered -c 'select(.type == "assistant")' 2>/dev/null | {
                 _prev=""
                 while IFS= read -r _event; do
+                    date +%s > "$_hb_signal"
+                    printf "\r\033[K" >&2
                     if [[ -n "$_prev" ]]; then
                         # Intermediate turn — full text to stderr
                         printf '%s\n' "$_prev" | jq -r '.message.content[] | select(.type == "text") | .text' >&2 2>/dev/null
@@ -61,6 +72,7 @@ tool_execute_prompt() {
                     _prev="$_event"
                 done
                 # Last turn — split at first content marker (frontmatter --- or heading #)
+                printf "\r\033[K" >&2
                 if [[ -n "$_prev" ]]; then
                     _text=$(printf '%s\n' "$_prev" | jq -r '.message.content[] | select(.type == "text") | .text' 2>/dev/null)
                     _split_pat='^(---|#)'
@@ -72,18 +84,72 @@ tool_execute_prompt() {
                     fi
                 fi
             })
+            _stop_heartbeat "$_hb_pid"
+            rm -f "$_hb_signal"
+
             if [[ -n "$_output" ]]; then
                 printf '%s\n' "$_output"
                 local _lines=$(printf '%s\n' "$_output" | wc -l | tr -d ' ')
                 print_status "Done ($_lines lines written)"
             fi
         else
+            # Terminal mode — stream directly
+            _start_heartbeat "$_hb_signal" &
+            local _hb_pid=$!
+            disown "$_hb_pid" 2>/dev/null
+
             echo "$prompt" | claude -p "${args[@]}" | \
-                jq --unbuffered -r 'select(.type == "assistant") | .message.content[] | select(.type == "text") | .text' 2>/dev/null
+                jq --unbuffered -r 'select(.type == "assistant") | .message.content[] | select(.type == "text") | .text' 2>/dev/null | {
+                while IFS= read -r _line; do
+                    date +%s > "$_hb_signal"
+                    printf "\r\033[K" >&2
+                    printf '%s\n' "$_line"
+                done
+            }
+            _stop_heartbeat "$_hb_pid"
+            rm -f "$_hb_signal"
         fi
     else
         echo "$prompt" | claude -p "${args[@]}"
     fi
+}
+
+# Smart heartbeat — shows elapsed time on stderr, auto-hides during output.
+# Uses a signal file: when the main loop writes a timestamp, the heartbeat
+# hides for 3 seconds. Resumes automatically during silent gaps (tool calls,
+# model thinking). Compatible with bash 3.2 (no read -t needed).
+_start_heartbeat() {
+    local signal_file="$1"
+    local elapsed=0
+    local showing=false
+    while true; do
+        sleep 1
+        local last_activity
+        last_activity=$(cat "$signal_file" 2>/dev/null)
+        local now
+        now=$(date +%s)
+        if [[ -n "$last_activity" ]] && [[ $((now - last_activity)) -lt 3 ]]; then
+            # Recent output — hide heartbeat, reset counter
+            if [[ "$showing" == true ]]; then
+                printf "\r\033[K" >&2
+                showing=false
+            fi
+            elapsed=0
+            continue
+        fi
+        # No recent output — show heartbeat
+        ((elapsed++))
+        showing=true
+        printf "\r\033[1;34m[AI Runner]\033[0m Working... %ds" "$elapsed" >&2
+    done
+}
+
+# Stop heartbeat and clear the line
+_stop_heartbeat() {
+    local pid="$1"
+    kill "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    printf "\r\033[K" >&2
 }
 
 tool_get_install_instructions() {

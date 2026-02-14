@@ -34,6 +34,20 @@ cat package.json | ./analyze-stdin.md
 ai live-report.md > report.txt
 ```
 
+## Chaining Scripts
+
+Chain scripts together in pipelines — each script runs independently with process isolation:
+
+```bash
+# Parse → generate → review pipeline
+./parse-input.md | ./generate-code.md | ./review-output.md > final.txt
+
+# Feed data through multiple analysis steps
+cat data.json | ./extract.md | ./summarize.md > summary.txt
+```
+
+See [docs/SCRIPTING.md](../docs/SCRIPTING.md) for composable patterns and the dispatcher pattern.
+
 ## Key Concepts
 
 - **No flags** = read-only (can analyze code but won't modify anything)

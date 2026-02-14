@@ -338,7 +338,7 @@ source "$AI_RUNNER_SHARE_DIR/lib/tool-loader.sh"
 unset ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL
 unset ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN
 unset CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
-unset AI_LIVE_OUTPUT AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+unset AI_LIVE_OUTPUT AI_QUIET AI_SESSION_ID CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
 unset CLAUDECODE
 
 # Parse shebang flags into SHEBANG_* variables
@@ -347,6 +347,7 @@ _parse_shebang_flags() {
     SHEBANG_PROVIDER=""
     SHEBANG_MODEL_TIER=""
     SHEBANG_LIVE=""
+    SHEBANG_QUIET=""
     SHEBANG_PERMISSION_SHORTCUT=""
     SHEBANG_PASSTHROUGH=()
     [[ "$line" != *"ai"* && "$line" != *"claude-run"* ]] && return
@@ -367,6 +368,7 @@ _parse_shebang_flags() {
             --sonnet|--mid) SHEBANG_MODEL_TIER="mid" ;;
             --haiku|--low) SHEBANG_MODEL_TIER="low" ;;
             --live) SHEBANG_LIVE=true ;;
+            --quiet|-q) SHEBANG_QUIET=true ;;
             --skip) SHEBANG_PERMISSION_SHORTCUT="skip" ;;
             --bypass) SHEBANG_PERMISSION_SHORTCUT="bypass" ;;
             --cc) ;; # consumed by CLI parser, ignore in shebang re-parse
@@ -399,6 +401,7 @@ TEAMMATE_MODE=""
 PERMISSION_SHORTCUT=""
 EXPLICIT_PERMISSION_MODE=false
 LIVE_OUTPUT=false
+QUIET_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -427,6 +430,7 @@ while [[ $# -gt 0 ]]; do
         --skip) PERMISSION_SHORTCUT="skip"; shift ;;
         --bypass) PERMISSION_SHORTCUT="bypass"; shift ;;
         --live) LIVE_OUTPUT=true; shift ;;
+        --quiet|-q) QUIET_MODE=true; shift ;;
         --permission-mode) EXPLICIT_PERMISSION_MODE=true; CLAUDE_ARGS+=("$1" "$2"); shift 2 ;;
         --permission-mode=*) EXPLICIT_PERMISSION_MODE=true; CLAUDE_ARGS+=("$1"); shift ;;
         --dangerously-skip-permissions) EXPLICIT_PERMISSION_MODE=true; CLAUDE_ARGS+=("$1"); shift ;;
@@ -469,6 +473,7 @@ if [[ "$_SHEBANG_LINE" == "#!"* ]]; then
     [[ -z "$PROVIDER_FLAG" && -n "$SHEBANG_PROVIDER" ]] && PROVIDER_FLAG="$SHEBANG_PROVIDER"
     [[ -z "$MODEL_TIER" && -z "$CUSTOM_MODEL" && -n "$SHEBANG_MODEL_TIER" ]] && MODEL_TIER="$SHEBANG_MODEL_TIER"
     [[ "$LIVE_OUTPUT" != true && "$SHEBANG_LIVE" == true ]] && LIVE_OUTPUT=true
+    [[ "$QUIET_MODE" != true && "$SHEBANG_QUIET" == true ]] && QUIET_MODE=true
     [[ -z "$PERMISSION_SHORTCUT" && -n "$SHEBANG_PERMISSION_SHORTCUT" ]] && PERMISSION_SHORTCUT="$SHEBANG_PERMISSION_SHORTCUT"
     [[ ${#SHEBANG_PASSTHROUGH[@]} -gt 0 ]] && CLAUDE_ARGS+=("${SHEBANG_PASSTHROUGH[@]}")
 fi
@@ -539,6 +544,7 @@ Agent teams (experimental):
 Output and input:
   --output-format <fmt>        Output format: text, json, stream-json
   --live                       Stream text output in real-time (script mode)
+  --quiet, -q                  Suppress --live status (clean stdout for CI/CD)
   --stdin-position <pos>       Place piped input before or after file content:
                                'prepend' (default) or 'append'
 
@@ -714,6 +720,12 @@ write_session_info "$(provider_name)" "BYOK" "${ANTHROPIC_MODEL:-(system default
 trap 'cleanup_session_info; provider_cleanup_env' EXIT
 
 [[ "$NEEDS_VERBOSE" == true ]] && CLAUDE_ARGS=("--verbose" "${CLAUDE_ARGS[@]}")
+
+# Handle --quiet mode (suppresses --live and status messages)
+if [[ "$QUIET_MODE" == true ]]; then
+    LIVE_OUTPUT=false
+    export AI_QUIET=true
+fi
 
 # Handle --live mode
 if [[ "$LIVE_OUTPUT" == true ]]; then

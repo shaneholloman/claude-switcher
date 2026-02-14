@@ -120,7 +120,7 @@ ai --pro                          # Claude Pro/Max subscription
 
 # Local model selection
 ai --ollama --model qwen3-coder   # Ollama with specific model
-ai --ollama --model glm-4.7:cloud # Ollama cloud model (no GPU needed)
+ai --ollama --model minimax-m2.5:cloud # Ollama cloud model (no GPU needed)
 ai --lmstudio --model openai/gpt-oss-20b  # LM Studio with specific model
 
 # Use any model via Vercel (OpenAI, xAI, Google, more)
@@ -138,6 +138,9 @@ ai --low task.md                  # Same as --haiku
 
 # Stream output in real-time (prompt should say "print as you go" or similar)
 ai --live --skip task.md
+
+# Suppress --live status for CI/CD (clean stdout only)
+ai --quiet ./live-script.md > output.md
 
 # Live output + file redirect (narration to console, clean content to file)
 ./live-report.md > report.md
@@ -204,7 +207,7 @@ ai --opus task.md                  # Override: use Opus instead
 
 > **Flag precedence:** CLI flags > shebang flags > saved defaults. Running `ai --vercel task.md` overrides the script's shebang provider. Shebang flags override `--set-default` preferences.
 
-> **Passthrough flags:** AI Runner handles its own flags (provider, model, `--live`, `--skip`, `--bypass`, `--team`, etc.) and forwards any unrecognized flags (e.g. `--chrome`, `--allowedTools`, `--output-format`, `--verbose`) to the underlying Claude Code process unchanged.
+> **Passthrough flags:** AI Runner handles its own flags (provider, model, `--live`, `--quiet`, `--skip`, `--bypass`, `--team`, etc.) and forwards any unrecognized flags (e.g. `--chrome`, `--allowedTools`, `--output-format`, `--verbose`) to the underlying Claude Code process unchanged.
 
 > **Warning:** `--skip`, `--bypass`, and `--permission-mode bypassPermissions` give the AI full system access. Only run trusted scripts in trusted directories. Use `--allowedTools` for granular control. See **[docs/SCRIPTING.md](docs/SCRIPTING.md)** for details.
 
@@ -241,6 +244,8 @@ for f in logs/*.txt; do
     cat "$f" | ./analyze.md >> summary.txt
 done
 ```
+
+> **Composable scripts:** AIRun clears inherited environment variables between nested calls, so chained scripts each start fresh. See [docs/SCRIPTING.md](docs/SCRIPTING.md) for composable patterns, the dispatcher pattern (`--cc --skip`), and long-running script tips.
 
 ### Piped Script Execution
 
@@ -323,8 +328,8 @@ ollama pull qwen3-coder               # Pull a model (needs 24GB+ VRAM)
 ai --ollama                           # Run with Ollama
 
 # Cloud models — no GPU required, runs on Ollama's servers
-ollama pull glm-4.7:cloud             # Tiny download, runs remotely
-ai --ollama --model glm-4.7:cloud
+ollama pull minimax-m2.5:cloud        # Tiny download, runs remotely
+ai --ollama --model minimax-m2.5:cloud
 ```
 
 **LM Studio** — local models with MLX support (fast on latest Apple Silicon):

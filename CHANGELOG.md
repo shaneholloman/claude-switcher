@@ -5,10 +5,19 @@ All notable changes to AI Runner will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.6] - 2026-02-13
+## [2.3.6] - 2026-02-14
+
+### Added
+- **`--live` heartbeat**: Shows `[AI Runner] Working... Ns` on stderr during silent gaps (tool calls, model thinking). Auto-hides when AI output streams, auto-restarts after 3s of silence. Bash 3.2 compatible via file-based signaling.
+- **`--quiet` / `-q` flag**: Suppresses `--live` status messages for clean CI/CD output. Overrides `--live` from shebangs. `print_error` and `print_warning` are NOT suppressed.
+- **Composable scripts docs**: New section in `docs/SCRIPTING.md` covering `--cc` tool selection, dispatcher pattern, chaining, and long-running scripts.
+- **Andi-promote guide**: `docs/ANDI-PROMOTE.md` with entry patterns and progress visibility.
 
 ### Fixed
-- **Nested `claude -p` calls**: Clear `CLAUDECODE` env var in process isolation block, allowing child `ai` scripts to call `claude -p` (prompt mode) from within a parent `--cc` session. Previously, Claude Code refused to run nested sessions even in non-interactive prompt mode.
+- **Nested `claude -p` calls**: Clear `CLAUDECODE` env var in process isolation block, allowing child `ai` scripts to call `claude -p` (prompt mode) from within a parent `--cc` session.
+
+### Changed
+- **Ollama cloud models**: Updated `glm-4.7:cloud` → `minimax-m2.5:cloud` (recommended), added `glm-5:cloud`. Updated across README, PROVIDERS.md, ollama.sh, and model recommendations.
 
 ## [2.3.5] - 2026-02-13
 

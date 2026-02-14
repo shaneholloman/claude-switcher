@@ -61,11 +61,14 @@ AI_RUNNER_VERSION=$(_detect_version)
 SWITCHER_VERSION="$AI_RUNNER_VERSION"  # Backward compatibility
 
 # Print functions with configurable branding
+# AI_QUIET suppresses status/success/info but NOT error/warning
 print_status() {
+    [[ "$AI_QUIET" == true ]] && return
     echo -e "${BLUE}[${AI_RUNNER_BRAND}]${NC} $1" >&2
 }
 
 print_success() {
+    [[ "$AI_QUIET" == true ]] && return
     echo -e "${GREEN}[${AI_RUNNER_BRAND}]${NC} $1" >&2
 }
 
@@ -78,6 +81,7 @@ print_error() {
 }
 
 print_info() {
+    [[ "$AI_QUIET" == true ]] && return
     echo -e "${CYAN}[${AI_RUNNER_BRAND}]${NC} $1" >&2
 }
 

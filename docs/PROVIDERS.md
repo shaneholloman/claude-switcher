@@ -64,14 +64,14 @@ ollama launch claude --config # Configure only, don't launch
 Cloud models run on Ollama's infrastructure — ideal if your system doesn't have enough VRAM for local models. Pull the manifest first (tiny download, the model runs remotely):
 
 ```bash
-ollama pull glm-4.7:cloud            # Tiny download, runs remotely
-ai --ollama --model glm-4.7:cloud
+ollama pull minimax-m2.5:cloud       # Tiny download, runs remotely
+ai --ollama --model minimax-m2.5:cloud
 ```
 
 | Cloud Model | Description |
 |-------------|-------------|
-| `glm-4.7:cloud` | High-performance, 128K context, tool-calling |
-| `minimax-m2.1:cloud` | Fast responses, good for iteration |
+| `minimax-m2.5:cloud` | Fastest frontier model, 198K context |
+| `glm-5:cloud` | MIT license, strong reasoning, 198K context |
 
 See [Ollama cloud models](https://ollama.com/search?c=cloud) for full list.
 
@@ -81,11 +81,10 @@ Local models require sufficient VRAM — 24GB+ recommended for capable coding mo
 
 ```bash
 ollama pull qwen3-coder   # Coding optimized (needs 24GB+ VRAM)
-ollama pull glm-4.7       # 128K context, tool-calling
 ai --ollama
 ```
 
-**Recommended:** `qwen3-coder`, `glm-4.7`, `gpt-oss:20b`
+**Recommended:** `qwen3-coder`, `gpt-oss:20b`
 
 #### Model Aliases
 
@@ -311,7 +310,7 @@ ai --vercel --model xai/grok-code-fast-1         # xAI coding model
 ai --vercel --model openai/gpt-5.2-codex         # OpenAI coding model
 ai --vercel --model google/gemini-3-pro-preview   # Google reasoning model
 ai --vercel --model alibaba/qwen3-coder           # Alibaba coding model
-ai --vercel --model zai/glm-4.7                   # Zhipu AI 128K context
+ai --vercel --model zai/glm-5                     # Zhipu AI GLM-5 198K context
 ```
 
 **Example coding models:**
@@ -322,7 +321,7 @@ ai --vercel --model zai/glm-4.7                   # Zhipu AI 128K context
 | `openai/gpt-5.2-codex` | OpenAI | Coding-optimized GPT (also `openai/gpt-5.3-codex`) |
 | `google/gemini-3-pro-preview` | Google | Latest reasoning model |
 | `alibaba/qwen3-coder` | Alibaba | Open-source coding model |
-| `zai/glm-4.7` | Zhipu AI | 128K context model |
+| `zai/glm-5` | Zhipu AI | GLM-5, 198K context, MIT license |
 
 Browse all available models: [vercel.com/ai-gateway/models](https://vercel.com/ai-gateway/models)
 
