@@ -135,10 +135,12 @@ fi
 # Copy models configuration
 MODELS_FILE="$CONFIG_DIR/models.sh"
 if [ -f "$MODELS_FILE" ]; then
-    if ! diff -q "$PROJECT_ROOT/config/models.sh" "$MODELS_FILE" &>/dev/null; then
+    # Compare only non-comment, non-blank lines to ignore cosmetic changes
+    if ! diff -q <(grep -v '^\s*#\|^\s*$' "$PROJECT_ROOT/config/models.sh") \
+                  <(grep -v '^\s*#\|^\s*$' "$MODELS_FILE") &>/dev/null; then
         echo -e "${YELLOW}Model configuration has been updated.${NC}"
         echo "  Changes include updated default model versions."
-        if [ -f "$SECRETS_FILE" ] && grep -q "CLAUDE_MODEL_OPUS" "$SECRETS_FILE" 2>/dev/null; then
+        if [ -f "$SECRETS_FILE" ] && grep -q "^[^#]*CLAUDE_MODEL_" "$SECRETS_FILE" 2>/dev/null; then
             echo -e "${YELLOW}  Note: You have model overrides in secrets.sh.${NC}"
         fi
         read -p "  Update to latest model defaults? [Y/n]: " update_choice
@@ -747,7 +749,7 @@ fi
 if [[ -n "$MD_FILE" ]]; then
     [[ "$(head -1 "$MD_FILE")" == "#!"* ]] && CONTENT=$(tail -n +2 "$MD_FILE") || CONTENT=$(cat "$MD_FILE")
     [[ -n "$STDIN_CONTENT" ]] && {
-        [[ "$STDIN_POSITION" == "prepend" ]] && CONTENT="stdin:
+        [[ "$STDIN_POSITION" == "prepend" ]] && CONTENT="The following input was provided via stdin:
 ---
 $STDIN_CONTENT
 ---
@@ -755,7 +757,7 @@ $STDIN_CONTENT
 $CONTENT" || CONTENT="$CONTENT
 
 ---
-stdin:
+The following input was provided via stdin:
 ---
 $STDIN_CONTENT"
     }
@@ -786,6 +788,8 @@ print_status "- Auth: $(provider_get_auth_method)"
 print_status "- Model: ${ANTHROPIC_MODEL:-(system default)}"
 [[ -n "$ANTHROPIC_SMALL_FAST_MODEL" ]] && print_status "- Small/Fast Model: $ANTHROPIC_SMALL_FAST_MODEL"
 [[ -n "$TEAM_MODE" ]] && print_status "- Agent Teams: enabled"
+# Provider-specific extra info (e.g., system capabilities for Ollama)
+provider_print_extra_info
 
 # Show auth conflict note for API key mode
 if [[ "$PROVIDER_FLAG" == "apikey" ]] && [[ -n "$ANTHROPIC_API_KEY" ]]; then

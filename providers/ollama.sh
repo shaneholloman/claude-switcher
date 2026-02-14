@@ -4,7 +4,7 @@
 # As of Ollama 0.14.0 (January 2026), supports Anthropic Messages API
 # See: https://ollama.com/blog/claude
 #
-# CLOUD MODELS: Use :cloud suffix (e.g., minimax-m2.5:cloud, glm-5:cloud)
+# CLOUD MODELS: Use :cloud suffix (e.g., glm-5:cloud, minimax-m2.5:cloud)
 #   - Requires: ollama signin (one-time browser auth)
 #   - No GPU needed - models run on Ollama's infrastructure
 #   - See: https://ollama.com/search?c=cloud
@@ -18,8 +18,8 @@
 # REQUIREMENTS: Claude Code needs 64K+ context. Ollama-recommended models:
 #   - qwen3-coder (coding optimized, 30B, needs 24GB VRAM)
 #   - gpt-oss:20b (strong general-purpose)
-#   - minimax-m2.5:cloud (fastest frontier, 198K context)
 #   - glm-5:cloud (MIT license, strong reasoning, 198K context)
+#   - minimax-m2.5:cloud (fastest frontier, 198K context)
 # See: https://docs.ollama.com/integrations/claude-code
 
 PROVIDER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,11 +144,11 @@ _ollama_get_model_recommendations() {
         echo "RECOMMENDED=gpt-oss:20b,qwen2.5-coder:14b"
         echo "TIER=mid"
     elif [ "${vram:-0}" -ge 12 ]; then
-        echo "RECOMMENDED=qwen2.5-coder:14b,minimax-m2.5:cloud"
+        echo "RECOMMENDED=qwen2.5-coder:14b,glm-5:cloud"
         echo "TIER=low"
         echo "NOTE=Consider using Ollama Cloud for better performance."
     else
-        echo "RECOMMENDED=qwen2.5-coder:7b,minimax-m2.5:cloud"
+        echo "RECOMMENDED=qwen2.5-coder:7b,glm-5:cloud"
         echo "TIER=minimal"
         echo "NOTE=Limited VRAM. Recommend Ollama Cloud for coding tasks."
     fi
@@ -212,7 +212,7 @@ _ollama_prompt_cloud_switch() {
     echo ""
     echo "Ollama Cloud runs models on Ollama's servers (fast on any hardware)."
     echo ""
-    echo "  1) Switch to cloud (recommended) - pulls minimax-m2.5:cloud (~1MB manifest)"
+    echo "  1) Switch to cloud (recommended) - pulls glm-5:cloud (~1MB manifest)"
     echo "  2) Continue with local model anyway"
     echo ""
 
@@ -223,8 +223,8 @@ _ollama_prompt_cloud_switch() {
     case "$choice" in
         1|"")
             echo ""
-            print_status "Pulling minimax-m2.5:cloud..."
-            if ollama pull minimax-m2.5:cloud 2>&1; then
+            print_status "Pulling glm-5:cloud..."
+            if ollama pull glm-5:cloud 2>&1; then
                 print_success "Cloud model ready!"
                 return 0
             else
@@ -275,9 +275,9 @@ _ollama_print_system_recommendations() {
         echo "RECOMMENDED: Use Ollama Cloud (your system has limited VRAM)"
         echo ""
         echo "  Cloud models run on Ollama's servers - fast on any hardware:"
+        echo "  ollama pull glm-5:cloud         # MIT license, strong reasoning (recommended)"
         echo "  ollama pull minimax-m2.5:cloud  # Fastest frontier, 198K context"
-        echo "  ollama pull glm-5:cloud         # MIT license, strong reasoning"
-        echo "  ai --ollama --model minimax-m2.5:cloud"
+        echo "  ai --ollama --model glm-5:cloud"
         echo ""
         echo "  Or use quick setup:  ollama launch claude"
         if [ "${vram:-0}" -ge 12 ]; then
@@ -302,7 +302,7 @@ _ollama_print_system_recommendations() {
         echo ""
         echo "Note: qwen3-coder:30b (~19GB) may be slow on your system."
         echo "For best performance, consider cloud:"
-        echo "  ollama pull minimax-m2.5:cloud"
+        echo "  ollama pull glm-5:cloud"
     fi
 
     if [ "${disk:-0}" -lt 20 ]; then
@@ -323,7 +323,7 @@ provider_validate_config() {
     local ollama_url="${OLLAMA_HOST:-http://localhost:11434}"
 
     # Check if Ollama is running (required for both local and cloud models)
-    # Cloud models (e.g., minimax-m2.5:cloud) are proxied through the local server
+    # Cloud models (e.g., glm-5:cloud) are proxied through the local server
     if curl -s --connect-timeout 2 "${ollama_url}/api/tags" &>/dev/null; then
         _OLLAMA_URL="$ollama_url"
         _OLLAMA_AUTH_METHOD="Ollama Server"
@@ -352,8 +352,8 @@ LOCAL MODELS (free, requires GPU):
   ai --ollama
 
 CLOUD MODELS (no GPU needed):
-  ollama pull minimax-m2.5:cloud  # Tiny download, runs remotely
-  ai --ollama --model minimax-m2.5:cloud
+  ollama pull glm-5:cloud         # Tiny download, runs remotely
+  ai --ollama --model glm-5:cloud
 
 See: https://docs.ollama.com/api/anthropic-compatibility
 EOF
@@ -378,7 +378,7 @@ provider_setup_env() {
     # Configure Ollama as Anthropic API compatible endpoint
     # Per Ollama docs: https://docs.ollama.com/api/anthropic-compatibility
     #
-    # IMPORTANT: Cloud models (e.g., minimax-m2.5:cloud) are accessed through your
+    # IMPORTANT: Cloud models (e.g., glm-5:cloud) are accessed through your
     # LOCAL Ollama server, which proxies to Ollama's cloud. The :cloud suffix
     # tells Ollama to run the model on their infrastructure, but the API
     # endpoint is always your local server (localhost:11434).
@@ -507,7 +507,7 @@ _ollama_auto_detect_model() {
     #   gpt-oss:20b = ~12GB → needs ~16GB effective
     #   qwen2.5-coder:14b = ~9GB → needs ~12GB effective
     #   qwen2.5-coder:7b = ~5GB → needs ~8GB effective
-    local cloud_patterns=("minimax-m2.5:cloud" "glm-5:cloud" "gpt-oss:120b:cloud")
+    local cloud_patterns=("glm-5:cloud" "minimax-m2.5:cloud" "gpt-oss:120b:cloud")
     # High tier: needs 28GB+ effective VRAM for qwen3-coder:30b
     local high_local=("qwen3-coder" "gpt-oss:20b")
     # Mid tier: needs 16-24GB effective VRAM - avoid qwen3-coder:30b
@@ -543,7 +543,7 @@ _ollama_auto_detect_model() {
             local prompt_result=$?
             if [ $prompt_result -eq 0 ]; then
                 # User chose to use cloud - return cloud model
-                echo "minimax-m2.5:cloud"
+                echo "glm-5:cloud"
                 return
             fi
             # User chose to continue with local - fall through
@@ -556,7 +556,7 @@ _ollama_auto_detect_model() {
         high)
             # High tier can include cloud for capable systems
             if [ "$prefer_cloud" != true ]; then
-                patterns+=("gpt-oss:120b:cloud" "minimax-m2.5:cloud" "glm-5:cloud")
+                patterns+=("gpt-oss:120b:cloud" "glm-5:cloud" "minimax-m2.5:cloud")
             fi
             patterns+=("${high_local[@]}")
             ;;
@@ -590,7 +590,7 @@ _ollama_check_model_suitability() {
 
     # Ollama-recommended models for Claude Code
     # See: https://docs.ollama.com/integrations/claude-code
-    local recommended_models="qwen3-coder|glm-5|gpt-oss|minimax-m2.5|qwen2.5-coder"
+    local recommended_models="qwen3-coder|glm-5|gpt-oss|qwen2.5-coder|minimax-m2.5"
 
     if ! echo "$model" | grep -qiE "$recommended_models"; then
         print_warning "Model '$model' may not be optimized for Claude Code."

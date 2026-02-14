@@ -64,14 +64,14 @@ ollama launch claude --config # Configure only, don't launch
 Cloud models run on Ollama's infrastructure — ideal if your system doesn't have enough VRAM for local models. Pull the manifest first (tiny download, the model runs remotely):
 
 ```bash
-ollama pull minimax-m2.5:cloud       # Tiny download, runs remotely
-ai --ollama --model minimax-m2.5:cloud
+ollama pull glm-5:cloud              # Tiny download, runs remotely
+ai --ollama --model glm-5:cloud
 ```
 
 | Cloud Model | Description |
 |-------------|-------------|
+| `glm-5:cloud` | MIT license, strong reasoning, 198K context (recommended) |
 | `minimax-m2.5:cloud` | Fastest frontier model, 198K context |
-| `glm-5:cloud` | MIT license, strong reasoning, 198K context |
 
 See [Ollama cloud models](https://ollama.com/search?c=cloud) for full list.
 

@@ -120,7 +120,7 @@ ai --pro                          # Claude Pro/Max subscription
 
 # Local model selection
 ai --ollama --model qwen3-coder   # Ollama with specific model
-ai --ollama --model minimax-m2.5:cloud # Ollama cloud model (no GPU needed)
+ai --ollama --model glm-5:cloud       # Ollama cloud model (no GPU needed)
 ai --lmstudio --model openai/gpt-oss-20b  # LM Studio with specific model
 
 # Use any model via Vercel (OpenAI, xAI, Google, more)
@@ -328,8 +328,8 @@ ollama pull qwen3-coder               # Pull a model (needs 24GB+ VRAM)
 ai --ollama                           # Run with Ollama
 
 # Cloud models — no GPU required, runs on Ollama's servers
-ollama pull minimax-m2.5:cloud        # Tiny download, runs remotely
-ai --ollama --model minimax-m2.5:cloud
+ollama pull glm-5:cloud               # Tiny download, runs remotely
+ai --ollama --model glm-5:cloud
 ```
 
 **LM Studio** — local models with MLX support (fast on latest Apple Silicon):

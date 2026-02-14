@@ -65,7 +65,8 @@ export CLAUDE_MODEL_HAIKU_VERCEL="${CLAUDE_MODEL_HAIKU_VERCEL:-anthropic/claude-
 #
 # Recommended models with 64K+ context for Claude Code compatibility:
 #   - qwen3-coder: Coding optimized, good balance
-#   - glm-4.7: 128K context, tool-calling support
+#   - glm-5:cloud (MIT license, strong reasoning, 198K context)
+#   - minimax-m2.5:cloud (fastest frontier, 198K context)
 
 # OpenRouter Model Defaults
 # See: https://openrouter.ai
