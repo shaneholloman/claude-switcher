@@ -6,11 +6,12 @@ Executable markdown scripts showing key AI Runner features. Run from any repo.
 
 | File | Key Flags | What It Shows |
 |------|-----------|---------------|
-| `hello.md` | *(none)* | Minimal shebang — just `#!/usr/bin/env ai` |
-| `analyze-code.md` | *(none)* | Read-only analysis — no permission flags needed |
-| `run-tests.md` | `--skip` | Automation — `--skip` allows running commands and writing files |
-| `live-report.md` | `--skip --live` | Live streaming — see output in real-time as it's generated |
-| `analyze-stdin.md` | *(none)* | Stdin piping — accepts data via `cat data.json \| ./analyze-stdin.md` |
+| `hello.md` | `--haiku` | Minimal shebang — cheap model for a trivial task |
+| `analyze-code.md` | `--sonnet --skip` | Code analysis — Sonnet reads files to summarize architecture |
+| `run-tests.md` | `--sonnet --skip` | Automation — `--skip` allows running commands and reading output |
+| `check-project-readme.md` | `--sonnet --skip --live` | Live audit — streams findings in real-time as it reads files |
+| `live-report.md` | `--sonnet --skip --live` | Live streaming — explores repo and streams a report |
+| `analyze-stdin.md` | `--haiku` | Stdin piping — cheap model for `cat data.json \| ./analyze-stdin.md` |
 | `summarize-topic.md` | `--haiku` + vars | Variables — front-matter defaults with `--varname` CLI overrides |
 
 ## Running
@@ -51,7 +52,8 @@ See [docs/SCRIPTING.md](../docs/SCRIPTING.md) for composable patterns and the di
 
 ## Key Concepts
 
-- **No flags** = read-only (can analyze code but won't modify anything)
+- **`--haiku`** = cheap/fast model for simple tasks (text generation, data analysis)
+- **`--sonnet`** = balanced model for code analysis, test running, report generation
 - **`--skip`** = full automation (can run commands, write files, use tools)
 - **`--live`** = stream text as it's generated. Streams at turn granularity — your prompt should tell Claude to narrate progress (e.g., "print your findings as you go") so there's text to stream between tool calls. When redirecting to a file (`> report.md`), narration streams to stderr while clean content goes to the file.
 - **Stdin piping** = pipe data in with `cat file | ./script.md`
